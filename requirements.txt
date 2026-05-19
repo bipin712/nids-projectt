@@ -1,0 +1,11 @@
+flask
+flask-socketio
+eventlet
+scapy
+pandas
+numpy
+scikit-learn
+imbalanced-learn
+joblib
+matplotlib
+seaborn

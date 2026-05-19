@@ -1,0 +1,6 @@
+venv/
+__pycache__/
+*.pkl
+data/
+logs/
+.vscode/
