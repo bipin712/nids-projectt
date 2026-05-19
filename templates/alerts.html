@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>NIDS — Live Alerts</title>
+    <style>
+        body { font-family: Arial, sans-serif; background: #0f0f1a; color: #e0e0e0; padding: 30px; }
+        h1 { color: #ff4444; }
+        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+        th { background: #1a1a2e; color: #00ff88; padding: 12px; text-align: left; }
+        td { padding: 10px; border-bottom: 1px solid #333; }
+        tr:hover { background: #1a1a2e; }
+        .high { color: #ff4444; font-weight: bold; }
+        .medium { color: #ffd700; }
+        .low { color: #00ff88; }
+        a { color: #00ff88; }
+    </style>
+</head>
+<body>
+    <a href="/">← Back to Dashboard</a>
+    <h1>🚨 Live Alerts</h1>
+    <table>
+        <thead>
+            <tr><th>Time</th><th>Source IP</th><th>Attack Type</th><th>Severity</th><th>Method</th><th>Detail</th></tr>
+        </thead>
+        <tbody id="alert-body">
+            <tr><td colspan="6" style="text-align:center">Loading alerts...</td></tr>
+        </tbody>
+    </table>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.7.2/socket.io.min.js"></script>
+    <script>
+        const socket = io();
+        function loadAlerts() {
+            fetch('/api/alerts?limit=50')
+                .then(r => r.json())
+                .then(data => {
+                    const tbody = document.getElementById('alert-body');
+                    if (data.alerts.length === 0) {
+                        tbody.innerHTML = '<tr><td colspan="6" style="text-align:center">No alerts yet.</td></tr>';
+                        return;
+                    }
+                    tbody.innerHTML = data.alerts.map(a =>
+                        `<tr>
+                            <td>${a.timestamp || ''}</td>
+                            <td>${a.src_ip}</td>
+                            <td>${a.attack_type}</td>
+                            <td class="${(a.severity||'').toLowerCase()}">${a.severity}</td>
+                            <td>${a.method}</td>
+                            <td>${a.detail}</td>
+                        </tr>`
+                    ).join('');
+                });
+        }
+        loadAlerts();
+        socket.on('new_alert', function(alert) { loadAlerts(); });
+    </script>
+</body>
+</html>

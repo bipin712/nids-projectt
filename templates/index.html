@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>NIDS Dashboard</title>
+    <style>
+        body { font-family: Arial, sans-serif; background: #0f0f1a; color: #00ff88; text-align: center; padding: 50px; }
+        h1 { font-size: 2.5rem; }
+        .card { background: #1a1a2e; border: 1px solid #00ff88; border-radius: 10px; padding: 20px; margin: 20px auto; max-width: 400px; }
+        a { color: #00ff88; text-decoration: none; display: block; margin: 10px; font-size: 1.2rem; }
+        a:hover { text-decoration: underline; }
+        .status { color: #ffd700; font-size: 1rem; margin-top: 20px; }
+    </style>
+</head>
+<body>
+    <h1>🛡️ NIDS Dashboard</h1>
+    <p>Network Intrusion Detection System</p>
+    <div class="card">
+        <h2>Navigation</h2>
+        <a href="/alerts">🚨 Live Alerts</a>
+        <a href="/analysis">📊 Analysis</a>
+        <a href="/ml_status">🤖 ML Status</a>
+        <a href="/logs">📋 Logs</a>
+        <a href="/settings">⚙️ Settings</a>
+    </div>
+    <div class="card">
+        <h2>Quick Stats</h2>
+        <div id="stats">Loading...</div>
+    </div>
+    <p class="status">⚡ Flask + SocketIO server running — Phase 6 Complete!</p>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.7.2/socket.io.min.js"></script>
+    <script>
+        // Connect to the WebSocket server
+        const socket = io();
+        // When we receive a stats update, display it
+        socket.on('stats_update', function(data) {
+            document.getElementById('stats').innerHTML =
+                'Total Alerts: ' + data.total + ' | High: ' + data.high + ' | Medium: ' + data.medium;
+        });
+        // Also fetch stats from our API
+        fetch('/api/stats')
+            .then(r => r.json())
+            .then(data => {
+                const s = data.alert_stats;
+                document.getElementById('stats').innerHTML =
+                    'Total: ' + s.total + ' | High: ' + s.high + ' | Medium: ' + s.medium + ' | Low: ' + s.low;
+            });
+    </script>
+</body>
+</html>

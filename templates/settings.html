@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>NIDS — Settings</title>
+    <style>
+        body { font-family: Arial, sans-serif; background: #0f0f1a; color: #e0e0e0; padding: 30px; }
+        h1 { color: #00ff88; }
+        .card { background: #1a1a2e; border: 1px solid #333; border-radius: 10px; padding: 25px; max-width: 500px; margin: 20px 0; }
+        input { background: #0f0f1a; border: 1px solid #00ff88; color: #e0e0e0; padding: 10px; width: 70%; border-radius: 5px; }
+        button { background: #00ff88; color: #000; border: none; padding: 10px 20px; border-radius: 5px; cursor: pointer; margin-left: 10px; font-weight: bold; }
+        button:hover { background: #00cc66; }
+        .danger { background: #ff4444; color: #fff; }
+        .danger:hover { background: #cc0000; }
+        #response { margin-top: 15px; color: #ffd700; }
+        a { color: #00ff88; }
+    </style>
+</head>
+<body>
+    <a href="/">← Back to Dashboard</a>
+    <h1>⚙️ Settings</h1>
+
+    <div class="card">
+        <h2>Start Sniffer</h2>
+        <p>Enter your network interface name (use <code>ip a</code> on Kali to find it):</p>
+        <input type="text" id="interface-input" value="eth0" placeholder="e.g., eth0, wlan0, enp0s3">
+        <button onclick="startSniffer()">▶ Start</button>
+        <div id="response"></div>
+    </div>
+
+    <div class="card">
+        <h2>Clear All Alerts</h2>
+        <p>This will permanently delete all alerts from the database and CSV file.</p>
+        <button class="danger" onclick="clearAlerts()">🗑️ Clear All Alerts</button>
+        <div id="clear-response"></div>
+    </div>
+
+    <script>
+        function startSniffer() {
+            const iface = document.getElementById('interface-input').value;
+            fetch('/api/sniffer/start', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({interface: iface})
+            }).then(r => r.json()).then(data => {
+                document.getElementById('response').textContent = '✅ ' + data.message;
+            }).catch(err => {
+                document.getElementById('response').textContent = '❌ Error: ' + err;
+            });
+        }
+
+        function clearAlerts() {
+            if (!confirm('Are you sure you want to clear ALL alerts? This cannot be undone.')) return;
+            fetch('/api/alerts/clear', {method: 'POST'})
+                .then(r => r.json())
+                .then(data => {
+                    document.getElementById('clear-response').textContent = '✅ ' + data.message;
+                });
+        }
+    </script>
+</body>
+</html>

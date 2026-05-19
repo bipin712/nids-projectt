@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>NIDS — Analysis</title>
+    <style>
+        body { font-family: Arial, sans-serif; background: #0f0f1a; color: #e0e0e0; padding: 30px; text-align: center; }
+        h1 { color: #00ff88; }
+        .card { background: #1a1a2e; border: 1px solid #333; border-radius: 10px; padding: 20px; margin: 20px auto; max-width: 500px; }
+        .stat { font-size: 3rem; color: #00ff88; font-weight: bold; }
+        .label { color: #aaa; font-size: 0.9rem; }
+        a { color: #00ff88; }
+    </style>
+</head>
+<body>
+    <a href="/">← Back to Dashboard</a>
+    <h1>📊 Analysis</h1>
+    <div class="card">
+        <div class="stat" id="total">--</div>
+        <div class="label">Total Alerts</div>
+    </div>
+    <div class="card">
+        <div class="stat" id="high" style="color:#ff4444">--</div>
+        <div class="label">High Severity</div>
+    </div>
+    <div class="card">
+        <div class="stat" id="medium" style="color:#ffd700">--</div>
+        <div class="label">Medium Severity</div>
+    </div>
+    <script>
+        fetch('/api/stats').then(r => r.json()).then(data => {
+            const s = data.alert_stats;
+            document.getElementById('total').textContent = s.total;
+            document.getElementById('high').textContent = s.high;
+            document.getElementById('medium').textContent = s.medium;
+        });
+    </script>
+</body>
+</html>

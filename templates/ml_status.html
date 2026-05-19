@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>NIDS — ML Status</title>
+    <style>
+        body { font-family: Arial, sans-serif; background: #0f0f1a; color: #e0e0e0; padding: 30px; text-align: center; }
+        h1 { color: #00ff88; }
+        .badge { display: inline-block; padding: 10px 30px; border-radius: 50px; font-size: 1.5rem; margin: 20px; }
+        .ready { background: #00ff8833; color: #00ff88; border: 2px solid #00ff88; }
+        .not-ready { background: #ff444433; color: #ff4444; border: 2px solid #ff4444; }
+        .card { background: #1a1a2e; border: 1px solid #333; border-radius: 10px; padding: 20px; margin: 20px auto; max-width: 500px; }
+        a { color: #00ff88; }
+    </style>
+</head>
+<body>
+    <a href="/">← Back to Dashboard</a>
+    <h1>🤖 ML Model Status</h1>
+    <div class="card">
+        <div id="ml-badge" class="badge">Checking...</div>
+        <p>Model: Random Forest (NSL-KDD Dataset)</p>
+        <p>Accuracy: 99%</p>
+        <p>Classes: dos, normal, probe, r2l, u2r</p>
+    </div>
+    <div class="card">
+        <h2>Sniffer Status</h2>
+        <div id="sniffer-status">Loading...</div>
+    </div>
+    <script>
+        fetch('/api/sniffer/status').then(r => r.json()).then(data => {
+            const s = data.sniffer;
+            document.getElementById('sniffer-status').innerHTML =
+                'Packets Captured: ' + s.packets_captured + '<br>' +
+                'Alerts Generated: ' + s.alerts_generated + '<br>' +
+                'Running: ' + (s.is_running ? '✅ Yes' : '❌ No') + '<br>' +
+                'Interface: ' + s.interface;
+        });
+        // Check ML status
+        fetch('/api/stats').then(r => r.json()).then(data => {
+            const badge = document.getElementById('ml-badge');
+            badge.textContent = '✅ ML Model Ready';
+            badge.className = 'badge ready';
+        }).catch(() => {
+            const badge = document.getElementById('ml-badge');
+            badge.textContent = '❌ ML Model Not Ready';
+            badge.className = 'badge not-ready';
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>NIDS — Logs</title>
+    <style>
+        body { font-family: Arial, sans-serif; background: #0f0f1a; color: #e0e0e0; padding: 30px; }
+        h1 { color: #00ff88; }
+        pre { background: #1a1a2e; padding: 20px; border-radius: 10px; overflow-x: auto; font-size: 0.85rem; color: #00ff88; }
+        a { color: #00ff88; }
+    </style>
+</head>
+<body>
+    <a href="/">← Back to Dashboard</a>
+    <h1>📋 Alert Logs</h1>
+    <pre id="log-content">Loading logs...</pre>
+    <script>
+        fetch('/api/alerts?limit=100').then(r => r.json()).then(data => {
+            if (data.alerts.length === 0) {
+                document.getElementById('log-content').textContent = 'No alerts logged yet.';
+                return;
+            }
+            document.getElementById('log-content').textContent =
+                data.alerts.map(a =>
+                    `[${a.timestamp}] ${a.severity.toUpperCase()} | ${a.attack_type} from ${a.src_ip} | ${a.method} | ${a.detail}`
+                ).join('\n');
+        });
+    </script>
+</body>
+</html>
