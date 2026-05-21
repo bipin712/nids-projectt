@@ -93,8 +93,10 @@ def settings_page():
 # API route to get recent alerts as JSON (used by the alerts page)
 @app.route('/api/alerts')
 def api_get_alerts():
-    # Get the 'limit' parameter from the URL, defaulting to 50 if not provided
-    limit = request.args.get('limit', 50, type=int)
+    # Get the 'limit' parameter or 'n' parameter from the URL, defaulting to 50 if not provided
+    limit = request.args.get('limit', type=int)
+    if limit is None:
+        limit = request.args.get('n', 50, type=int)
     # Fetch recent alerts from the alert_logger's fast memory queue
     recent = alert_logger.get_recent(limit)
     # Return the alerts as a JSON response so JavaScript can read them

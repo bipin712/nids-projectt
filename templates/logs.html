@@ -1,29 +1,719 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+    <!-- Character encoding for text rendering -->
     <meta charset="UTF-8">
-    <title>NIDS — Logs</title>
+    <!-- Responsive layout sizing -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <!-- Browser tab title -->
+    <title>NIDS — Alert Logs</title>
     <style>
-        body { font-family: Arial, sans-serif; background: #0f0f1a; color: #e0e0e0; padding: 30px; }
-        h1 { color: #00ff88; }
-        pre { background: #1a1a2e; padding: 20px; border-radius: 10px; overflow-x: auto; font-size: 0.85rem; color: #00ff88; }
-        a { color: #00ff88; }
+        /* ── RESET & BASE STYLE ───────────────────────────────────── */
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'Segoe UI', Arial, sans-serif;
+            background: #0f0f1a;
+            color: #e0e0e0;
+            min-height: 100vh;
+            padding: 24px;
+        }
+
+        /* ── HEADER ───────────────────────────────────────────────── */
+        .page-header {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            margin-bottom: 28px;
+        }
+
+        .back-link {
+            color: #00ff88;
+            text-decoration: none;
+            font-size: 0.9rem;
+            padding: 6px 14px;
+            border: 1px solid #00ff8844;
+            border-radius: 6px;
+            transition: background 0.2s;
+        }
+
+        .back-link:hover { background: #00ff8811; }
+
+        h1 { color: #00ff88; font-size: 1.7rem; font-weight: 700; }
+
+        /* ── STATISTICS PANEL ─────────────────────────────────────── */
+        /* Row containing cards summarizing log details */
+        .stats-panel {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+            gap: 20px;
+            margin-bottom: 24px;
+        }
+
+        .stat-card {
+            background: #16162a;
+            border: 1px solid #2a2a4a;
+            border-radius: 12px;
+            padding: 20px;
+            text-align: center;
+        }
+
+        .stat-title {
+            font-size: 0.75rem;
+            color: #888;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            margin-bottom: 8px;
+        }
+
+        .stat-value {
+            font-size: 1.6rem;
+            font-weight: 700;
+            color: #00ff88;
+        }
+
+        /* Date range uses a smaller font size to prevent layout wrapping */
+        .stat-value.date-range {
+            font-size: 1.1rem;
+            color: #e0e0e0;
+            padding: 4px 0;
+        }
+
+        /* ── TOOLBAR: FILTERS AND ACTIONS ────────────────────────── */
+        .toolbar {
+            background: #16162a;
+            border: 1px solid #2a2a4a;
+            border-radius: 12px;
+            padding: 18px 20px;
+            margin-bottom: 20px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 16px;
+            align-items: flex-end;
+        }
+
+        .filter-group {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .filter-label {
+            font-size: 0.72rem;
+            color: #888;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+        }
+
+        /* Date input styling with dark background styling */
+        .date-input {
+            background: #0f0f1a;
+            border: 1px solid #2a2a4a;
+            color: #e0e0e0;
+            padding: 7px 12px;
+            border-radius: 8px;
+            font-size: 0.85rem;
+            outline: none;
+            cursor: pointer;
+        }
+
+        .date-input:focus { border-color: #00ff88; }
+
+        /* Actions container aligned to the right side */
+        .action-group {
+            margin-left: auto;
+            display: flex;
+            gap: 10px;
+        }
+
+        .action-btn {
+            padding: 8px 18px;
+            border-radius: 8px;
+            border: none;
+            font-size: 0.85rem;
+            cursor: pointer;
+            font-weight: 600;
+            transition: opacity 0.2s;
+        }
+
+        .action-btn:hover { opacity: 0.85; }
+
+        /* Green export button style */
+        #export-btn { background: #00cc66; color: #000; }
+        
+        /* Red clear log button style */
+        #clear-btn { background: #ff4444; color: #fff; }
+
+        /* ── TABLE AND HEADERS ────────────────────────────────────── */
+        .table-wrapper {
+            overflow-x: auto;
+            border: 1px solid #2a2a4a;
+            border-radius: 12px;
+            background: #16162a;
+            margin-bottom: 20px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.85rem;
+        }
+
+        /* Clickable headers showing interactive cursor */
+        th {
+            background: #1a1a2e;
+            color: #00ff88;
+            padding: 13px 14px;
+            text-align: left;
+            font-weight: 600;
+            border-bottom: 2px solid #2a2a4a;
+            cursor: pointer;
+            user-select: none;
+            white-space: nowrap;
+            transition: background 0.2s;
+        }
+
+        th:hover { background: #22223f; }
+
+        /* Spacing and decoration for sort indicator arrows */
+        .sort-arrow {
+            margin-left: 6px;
+            display: inline-block;
+            color: #ff9900;
+            font-size: 0.75rem;
+        }
+
+        td {
+            padding: 11px 14px;
+            border-bottom: 1px solid #1f1f35;
+            vertical-align: middle;
+        }
+
+        tr:hover td { background: #1a1a2e; }
+
+        /* ── BADGES FOR SEVERITY & METHOD ─────────────────────────── */
+        .badge {
+            padding: 3px 8px;
+            border-radius: 12px;
+            font-size: 0.75rem;
+            font-weight: 700;
+            display: inline-block;
+        }
+
+        /* Severity color styling classes */
+        .badge-high { background: #ff444422; color: #ff4444; border: 1px solid #ff444455; }
+        .badge-medium { background: #ff990022; color: #ff9900; border: 1px solid #ff990045; }
+        .badge-low { background: #0088ff22; color: #44aaff; border: 1px solid #0088ff45; }
+
+        /* Method color styling classes */
+        .badge-rule { background: #44444422; color: #aaa; border: 1px solid #555; }
+        .badge-ml { background: #0044ff22; color: #88aaff; border: 1px solid #0044ff44; }
+        .badge-both { background: #8800ff22; color: #cc88ff; border: 1px solid #8800ff44; }
+
+        .empty-msg {
+            text-align: center;
+            padding: 40px;
+            color: #555;
+            font-size: 0.95rem;
+        }
+
+        /* ── PAGINATION CONTROLS ───────────────────────────────────── */
+        .pagination-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: #16162a;
+            border: 1px solid #2a2a4a;
+            border-radius: 12px;
+            padding: 14px 20px;
+            font-size: 0.85rem;
+        }
+
+        .pagination-info { color: #888; }
+        
+        /* The dynamic text values are colored in bright green */
+        .pagination-info span { color: #00ff88; font-weight: 600; }
+
+        .pagination-controls {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        /* Paginate button styling */
+        .pg-btn {
+            background: #0f0f1a;
+            border: 1px solid #2a2a4a;
+            color: #aaa;
+            padding: 6px 14px;
+            border-radius: 6px;
+            font-size: 0.8rem;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .pg-btn:hover:not(:disabled) { border-color: #00ff88; color: #00ff88; }
+
+        /* Disabled paging buttons style */
+        .pg-btn:disabled {
+            opacity: 0.3;
+            cursor: not-allowed;
+            border-color: #222;
+        }
+
+        #page-text { color: #e0e0e0; font-weight: 600; }
     </style>
 </head>
 <body>
-    <a href="/">← Back to Dashboard</a>
-    <h1>📋 Alert Logs</h1>
-    <pre id="log-content">Loading logs...</pre>
+
+    <!-- ── PAGE HEADER ─────────────────────────────────────── -->
+    <div class="page-header">
+        <a href="/" class="back-link">← Dashboard</a>
+        <h1>📋 Alert Logs</h1>
+    </div>
+
+    <!-- ── SUMMARY STATISTICS ROW ──────────────────────────── -->
+    <div class="stats-panel">
+        <!-- Card 1: Total alert counts -->
+        <div class="stat-card">
+            <div class="stat-title">Total Logs</div>
+            <div class="stat-value" id="stat-total-count">0</div>
+        </div>
+        <!-- Card 2: Oldest to newest timestamp dates -->
+        <div class="stat-card">
+            <div class="stat-title">Date Range</div>
+            <div class="stat-value date-range" id="stat-date-range">N/A</div>
+        </div>
+        <!-- Card 3: Highest repeating attack category -->
+        <div class="stat-card">
+            <div class="stat-title">Common Attack</div>
+            <div class="stat-value" id="stat-common-attack">None</div>
+        </div>
+    </div>
+
+    <!-- ── TOOLBAR: FILTERS AND ACTION BUTTONS ──────────────── -->
+    <div class="toolbar">
+        <!-- Date filtering input boxes -->
+        <div class="filter-group">
+            <span class="filter-label">Start Date</span>
+            <input type="date" id="start-date" class="date-input">
+        </div>
+        <div class="filter-group">
+            <span class="filter-label">End Date</span>
+            <input type="date" id="end-date" class="date-input">
+        </div>
+        
+        <!-- Filter reset controls -->
+        <div class="filter-group">
+            <button class="pg-btn" id="reset-filters-btn" style="height: 34px;">Reset Range</button>
+        </div>
+
+        <!-- Download & delete triggers -->
+        <div class="action-group">
+            <button class="action-btn" id="export-btn">⬇ Download Full Log as CSV</button>
+            <button class="action-btn" id="clear-btn">🗑 Clear All Alerts</button>
+        </div>
+    </div>
+
+    <!-- ── ALERTS TABLE VIEW ───────────────────────────────── -->
+    <div class="table-wrapper">
+        <table>
+            <thead>
+                <tr>
+                    <!-- Clicking headers sorts columns. Arrow placeholders are updated by JavaScript -->
+                    <th data-col="id">ID <span class="sort-arrow" id="arrow-id"></span></th>
+                    <th data-col="timestamp">Timestamp <span class="sort-arrow" id="arrow-timestamp"></span></th>
+                    <th data-col="src_ip">Source IP <span class="sort-arrow" id="arrow-src_ip"></span></th>
+                    <th data-col="attack_type">Attack Type <span class="sort-arrow" id="arrow-attack_type"></span></th>
+                    <th data-col="severity">Severity <span class="sort-arrow" id="arrow-severity"></span></th>
+                    <th data-col="method">Method <span class="sort-arrow" id="arrow-method"></span></th>
+                    <th data-col="detail">Detail <span class="sort-arrow" id="arrow-detail"></span></th>
+                </tr>
+            </thead>
+            <tbody id="log-table-body">
+                <tr><td colspan="7" class="empty-msg">Loading alerts database logs…</td></tr>
+            </tbody>
+        </table>
+    </div>
+
+    <!-- ── PAGINATION AND CONTROL INDICATOR BAR ────────────── -->
+    <div class="pagination-bar">
+        <!-- Details about the active page rows slice -->
+        <div class="pagination-info">
+            Showing rows <span id="pg-start-row">0</span> to <span id="pg-end-row">0</span> of <span id="pg-total-rows">0</span> records
+        </div>
+        <!-- Paging buttons -->
+        <div class="pagination-controls">
+            <button class="pg-btn" id="prev-btn" disabled>Previous</button>
+            <span id="page-text">Page 1 of 1</span>
+            <button class="pg-btn" id="next-btn" disabled>Next</button>
+        </div>
+    </div>
+
+    <!-- ── JAVASCRIPT LOGIC ────────────────────────────────── -->
     <script>
-        fetch('/api/alerts?limit=100').then(r => r.json()).then(data => {
-            if (data.alerts.length === 0) {
-                document.getElementById('log-content').textContent = 'No alerts logged yet.';
+        // ── STATE VARIABLES ──────────────────────────────────────────────────
+        
+        // Holds the full list of alerts fetched from the backend (up to 500)
+        var allAlerts = [];
+        
+        // Holds the filtered alerts based on the selected date ranges
+        var filteredAlerts = [];
+        
+        // Defines the maximum rows displayed on a single table page
+        var PAGE_SIZE = 50;
+        
+        // Tracks the current page index (1-based)
+        var currentPage = 1;
+        
+        // Tracks the column selected for sorting (defaults to 'id' to show newest)
+        var sortColumn = 'id';
+        
+        // Tracks the direction of sorting ('asc' or 'desc')
+        var sortDirection = 'desc';
+
+        // ── LOAD AND FETCH LOGS ──────────────────────────────────────────────
+
+        // fetchLogs() — Fetches up to 500 alerts from the server database,
+        // computes summaries, and triggers the filter/sort rendering sequence.
+        function fetchLogs() {
+            // Retrieve recent alerts using our API, requesting a high limit of 500
+            fetch('/api/alerts?limit=500')
+                .then(function(res) { return res.json(); })
+                .then(function(data) {
+                    // Save response array locally
+                    allAlerts = data.alerts || [];
+                    
+                    // Compute logs summary statistics panel at the top
+                    calculateSummaryStats();
+                    
+                    // Trigger the date range filtering process
+                    applyDateFilters();
+                    
+                    // Fetch and show the size of the downloadable CSV file
+                    fetchCSVSize();
+                })
+                .catch(function(err) {
+                    console.error('[NIDS] Failed to load alerts logs:', err);
+                    document.getElementById('log-table-body').innerHTML =
+                        '<tr><td colspan="7" class="empty-msg">⚠️ Failed to connect to server database.</td></tr>';
+                });
+        }
+
+        // ── METADATA CSV SIZE CHECK ──────────────────────────────────────────
+
+        // fetchCSVSize() — Performs a lightweight HEAD request to read the
+        // content length of the CSV file without downloading the full document.
+        function fetchCSVSize() {
+            fetch('/api/alerts/download', { method: 'HEAD' })
+                .then(function(response) {
+                    // Extract Content-Length header value
+                    var sizeHeader = response.headers.get('Content-Length');
+                    if (sizeHeader) {
+                        // Convert bytes to kilobytes
+                        var kb = (parseInt(sizeHeader, 10) / 1024).toFixed(1);
+                        // Update button label with file size feedback
+                        document.getElementById('export-btn').textContent = '⬇ Download Full Log as CSV (' + kb + ' KB)';
+                    }
+                })
+                .catch(function() {
+                    // Silently fail if HEAD request is unsupported, keeping original label
+                });
+        }
+
+        // ── STATISTICS CALCULATOR ────────────────────────────────────────────
+
+        // calculateSummaryStats() — Computes the totals, date range limits,
+        // and most common attack category from the complete alerts list.
+        function calculateSummaryStats() {
+            // Update total alert logs count
+            document.getElementById('stat-total-count').textContent = allAlerts.length;
+
+            // Handle scenario when database holds no alerts
+            if (allAlerts.length === 0) {
+                document.getElementById('stat-date-range').textContent = 'N/A';
+                document.getElementById('stat-common-attack').textContent = 'None';
                 return;
             }
-            document.getElementById('log-content').textContent =
-                data.alerts.map(a =>
-                    `[${a.timestamp}] ${a.severity.toUpperCase()} | ${a.attack_type} from ${a.src_ip} | ${a.method} | ${a.detail}`
-                ).join('\n');
+
+            // Extract earliest and latest timestamps to form the date range
+            // (Note: allAlerts are sorted descending, so index 0 is latest and last is earliest)
+            var latest = allAlerts[0].timestamp || '—';
+            var earliest = allAlerts[allAlerts.length - 1].timestamp || '—';
+            
+            // Slice the timestamp string to show date portion (YYYY-MM-DD)
+            var cleanEarliest = earliest.substring(0, 10);
+            var cleanLatest = latest.substring(0, 10);
+
+            // Populate date range card with clean date text
+            document.getElementById('stat-date-range').textContent = cleanEarliest + ' to ' + cleanLatest;
+
+            // Calculate the most frequent attack category
+            var counts = {};
+            var maxCount = 0;
+            var commonAttack = 'None';
+
+            allAlerts.forEach(function(alert) {
+                var attack = alert.attack_type || 'Unknown';
+                // Increment category counter
+                counts[attack] = (counts[attack] || 0) + 1;
+                // Update track if this exceeds current high count
+                if (counts[attack] > maxCount) {
+                    maxCount = counts[attack];
+                    commonAttack = attack;
+                }
+            });
+
+            // Display common attack string alongside its percentage of total logs
+            var percentage = Math.round((maxCount / allAlerts.length) * 100);
+            document.getElementById('stat-common-attack').textContent = commonAttack + ' (' + percentage + '%)';
+        }
+
+        // ── DATE RANGE FILTER ────────────────────────────────────────────────
+
+        // applyDateFilters() — Filters the global list by comparing string
+        // dates in lexical order, then initiates sorting.
+        function applyDateFilters() {
+            var startVal = document.getElementById('start-date').value; // format: YYYY-MM-DD
+            var endVal = document.getElementById('end-date').value;     // format: YYYY-MM-DD
+
+            // Filter alerts into a new array
+            filteredAlerts = allAlerts.filter(function(alert) {
+                // Return true if timestamp is missing or malformed to avoid crashes
+                if (!alert.timestamp) return true;
+                
+                // Get the date component (first 10 characters: YYYY-MM-DD)
+                var alertDate = alert.timestamp.substring(0, 10);
+
+                // Check start date constraint
+                if (startVal && alertDate < startVal) {
+                    return false;
+                }
+                // Check end date constraint
+                if (endVal && alertDate > endVal) {
+                    return false;
+                }
+                
+                return true;
+            });
+
+            // Reset current page to first page since data subset has modified
+            currentPage = 1;
+            
+            // Proceed to sort the filtered results
+            sortAndRender();
+        }
+
+        // ── SORT AND RENDER PIPELINE ─────────────────────────────────────────
+
+        // sortAndRender() — Sorts the filtered dataset using the active column
+        // rules, updates the header indicators, and draws table rows.
+        function sortAndRender() {
+            // Sort filtered list in place
+            filteredAlerts.sort(function(a, b) {
+                var valA = a[sortColumn];
+                var valB = b[sortColumn];
+
+                // Handle null or missing values gracefully
+                if (valA === undefined || valA === null) valA = '';
+                if (valB === undefined || valB === null) valB = '';
+
+                // Convert numbers to floating integers if sorting the primary ID column
+                if (sortColumn === 'id') {
+                    valA = parseInt(valA, 10) || 0;
+                    valB = parseInt(valB, 10) || 0;
+                } else if (typeof valA === 'string') {
+                    // Lowercase string comparison for case-insensitive alphabetical sorting
+                    valA = valA.toLowerCase();
+                    valB = valB.toLowerCase();
+                }
+
+                // Standard ascending order check
+                if (valA < valB) return sortDirection === 'asc' ? -1 : 1;
+                if (valA > valB) return sortDirection === 'asc' ? 1 : -1;
+                return 0;
+            });
+
+            // Update direction arrows beside each column header
+            updateSortHeaders();
+
+            // Populate the active slice of page rows inside the table body
+            renderPage();
+        }
+
+        // ── RENDER PAGES ─────────────────────────────────────────────────────
+
+        // renderPage() — Computes array indices based on the active page,
+        // populates table rows, and toggles navigation states.
+        function renderPage() {
+            var tbody = document.getElementById('log-table-body');
+            var total = filteredAlerts.length;
+
+            // Handle cases where no alerts match active date conditions
+            if (total === 0) {
+                tbody.innerHTML = '<tr><td colspan="7" class="empty-msg">No alerts match your filter.</td></tr>';
+                document.getElementById('pg-start-row').textContent = 0;
+                document.getElementById('pg-end-row').textContent = 0;
+                document.getElementById('pg-total-rows').textContent = 0;
+                document.getElementById('page-text').textContent = 'Page 1 of 1';
+                document.getElementById('prev-btn').disabled = true;
+                document.getElementById('next-btn').disabled = true;
+                return;
+            }
+
+            // Calculate start and end offsets inside the filtered array
+            var startIdx = (currentPage - 1) * PAGE_SIZE;
+            var endIdx = Math.min(startIdx + PAGE_SIZE, total);
+
+            // Extract the page chunk list
+            var pageSlice = filteredAlerts.slice(startIdx, endIdx);
+
+            // Populate page table body rows
+            tbody.innerHTML = pageSlice.map(function(alert) {
+                var sevBadge = buildSeverityBadge(alert.severity);
+                var methodBadge = buildMethodBadge(alert.method);
+
+                return '<tr>' +
+                    '<td>' + (alert.id || '—') + '</td>' +
+                    '<td>' + (alert.timestamp || '—') + '</td>' +
+                    '<td>' + (alert.src_ip || '—') + '</td>' +
+                    '<td>' + (alert.attack_type || '—') + '</td>' +
+                    '<td>' + sevBadge + '</td>' +
+                    '<td>' + methodBadge + '</td>' +
+                    '<td>' + (alert.detail || '—') + '</td>' +
+                '</tr>';
+            }).join('');
+
+            // Update current index numbers on page information displays
+            document.getElementById('pg-start-row').textContent = startIdx + 1;
+            document.getElementById('pg-end-row').textContent = endIdx;
+            document.getElementById('pg-total-rows').textContent = total;
+
+            // Calculate overall total pages
+            var totalPages = Math.ceil(total / PAGE_SIZE);
+            document.getElementById('page-text').textContent = 'Page ' + currentPage + ' of ' + totalPages;
+
+            // Configure interactive states for previous and next buttons
+            document.getElementById('prev-btn').disabled = (currentPage === 1);
+            document.getElementById('next-btn').disabled = (currentPage === totalPages);
+        }
+
+        // ── BADGE DECORATOR BUILDERS ─────────────────────────────────────────
+
+        // buildSeverityBadge(severity) — Returns HTML badge for alert severity
+        function buildSeverityBadge(severity) {
+            var s = (severity || '').toLowerCase();
+            if (s === 'high')   { return '<span class="badge badge-high">'   + severity + '</span>'; }
+            if (s === 'medium') { return '<span class="badge badge-medium">' + severity + '</span>'; }
+            if (s === 'low')    { return '<span class="badge badge-low">'    + severity + '</span>'; }
+            return '<span class="badge">' + (severity || '—') + '</span>';
+        }
+
+        // buildMethodBadge(method) — Returns HTML badge for alert detection method
+        function buildMethodBadge(method) {
+            var m = (method || '').toLowerCase();
+            if (m === 'rule-based') { return '<span class="badge badge-rule">' + method + '</span>'; }
+            if (m === 'ml')         { return '<span class="badge badge-ml">'   + method + '</span>'; }
+            if (m === 'both')       { return '<span class="badge badge-both">' + method + '</span>'; }
+            return '<span class="badge">' + (method || '—') + '</span>';
+        }
+
+        // ── SORT COMPONENT HEADERS UI ────────────────────────────────────────
+
+        // updateSortHeaders() — Loops through columns to place indicator arrows
+        // on the active sorting column, clearing all others.
+        function updateSortHeaders() {
+            var cols = ['id', 'timestamp', 'src_ip', 'attack_type', 'severity', 'method', 'detail'];
+            
+            cols.forEach(function(col) {
+                var arrowElement = document.getElementById('arrow-' + col);
+                // Clear display if column is not being sorted
+                if (col !== sortColumn) {
+                    arrowElement.textContent = '';
+                } else {
+                    // Show up/down arrow depending on sort direction
+                    arrowElement.textContent = (sortDirection === 'asc') ? '▲' : '▼';
+                }
+            });
+        }
+
+        // ── UI EVENT LISTENERS BINDING ───────────────────────────────────────
+
+        document.addEventListener('DOMContentLoaded', function() {
+            // Load list from backend immediately
+            fetchLogs();
+
+            // ── DATE RANGE CHANGES ──────────────────────────────────────────
+            document.getElementById('start-date').addEventListener('change', applyDateFilters);
+            document.getElementById('end-date').addEventListener('change', applyDateFilters);
+
+            // ── RANGE RESET BUTTON ──────────────────────────────────────────
+            document.getElementById('reset-filters-btn').addEventListener('click', function() {
+                document.getElementById('start-date').value = '';
+                document.getElementById('end-date').value = '';
+                applyDateFilters();
+            });
+
+            // ── EXPORT DOWNLOAD ACTION ──────────────────────────────────────
+            document.getElementById('export-btn').addEventListener('click', function() {
+                // Navigate local window location directly to CSV export route
+                window.location.href = '/api/alerts/download';
+            });
+
+            // ── CLEAR DATABASE ACTION ───────────────────────────────────────
+            document.getElementById('clear-btn').addEventListener('click', function() {
+                // Display browser prompt to verify destructive action
+                var confirmWipe = confirm('Are you sure? This cannot be undone.');
+                if (confirmWipe) {
+                    // Trigger database post clear endpoint
+                    fetch('/api/alerts/clear', { method: 'POST' })
+                        .then(function(res) { return res.json(); })
+                        .then(function(data) {
+                            if (data.status === 'ok') {
+                                // Reload page view to update all structures
+                                window.location.reload();
+                            }
+                        })
+                        .catch(function(err) {
+                            console.error('[NIDS] Failed to clear database logs:', err);
+                        });
+                }
+            });
+
+            // ── TABLE HEADER CLICK HANDLERS (SORTING) ──────────────────────
+            document.querySelectorAll('th[data-col]').forEach(function(header) {
+                header.addEventListener('click', function() {
+                    var clickedCol = header.getAttribute('data-col');
+                    
+                    // Toggle direction if column is clicked twice consecutively
+                    if (clickedCol === sortColumn) {
+                        sortDirection = (sortDirection === 'desc') ? 'asc' : 'desc';
+                    } else {
+                        // Reset to sorting asc on new column selection
+                        sortColumn = clickedCol;
+                        sortDirection = 'asc';
+                    }
+                    
+                    // Reapply sorting algorithm and update view
+                    sortAndRender();
+                });
+            });
+
+            // ── PAGINATION CONTROLS ─────────────────────────────────────────
+            document.getElementById('prev-btn').addEventListener('click', function() {
+                if (currentPage > 1) {
+                    currentPage -= 1;
+                    renderPage();
+                }
+            });
+
+            document.getElementById('next-btn').addEventListener('click', function() {
+                var totalPages = Math.ceil(filteredAlerts.length / PAGE_SIZE);
+                if (currentPage < totalPages) {
+                    currentPage += 1;
+                    renderPage();
+                }
+            });
         });
     </script>
 </body>
