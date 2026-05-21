@@ -1,62 +1,537 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+    <!-- Character set for text rendering -->
     <meta charset="UTF-8">
-    <title>NIDS — Settings</title>
+    <!-- Responsive viewport layout -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <!-- Browser tab title -->
+    <title>NIDS — System Settings</title>
     <style>
-        body { font-family: Arial, sans-serif; background: #0f0f1a; color: #e0e0e0; padding: 30px; }
-        h1 { color: #00ff88; }
-        .card { background: #1a1a2e; border: 1px solid #333; border-radius: 10px; padding: 25px; max-width: 500px; margin: 20px 0; }
-        input { background: #0f0f1a; border: 1px solid #00ff88; color: #e0e0e0; padding: 10px; width: 70%; border-radius: 5px; }
-        button { background: #00ff88; color: #000; border: none; padding: 10px 20px; border-radius: 5px; cursor: pointer; margin-left: 10px; font-weight: bold; }
-        button:hover { background: #00cc66; }
-        .danger { background: #ff4444; color: #fff; }
-        .danger:hover { background: #cc0000; }
-        #response { margin-top: 15px; color: #ffd700; }
-        a { color: #00ff88; }
+        /* ── RESET & BASE STYLE ───────────────────────────────────── */
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'Segoe UI', Arial, sans-serif;
+            background: #0f0f1a;
+            color: #e0e0e0;
+            min-height: 100vh;
+            padding: 24px;
+        }
+
+        /* ── HEADER ───────────────────────────────────────────────── */
+        .page-header {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            margin-bottom: 28px;
+        }
+
+        .back-link {
+            color: #00ff88;
+            text-decoration: none;
+            font-size: 0.9rem;
+            padding: 6px 14px;
+            border: 1px solid #00ff8844;
+            border-radius: 6px;
+            transition: background 0.2s;
+        }
+
+        .back-link:hover { background: #00ff8811; }
+
+        h1 { color: #00ff88; font-size: 1.7rem; font-weight: 700; }
+
+        /* ── GRID LAYOUT ──────────────────────────────────────────── */
+        .settings-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+            gap: 24px;
+            margin-bottom: 24px;
+        }
+
+        .settings-card {
+            background: #16162a;
+            border: 1px solid #2a2a4a;
+            border-radius: 14px;
+            padding: 24px;
+            display: flex;
+            flex-direction: column;
+            gap: 14px;
+        }
+
+        .settings-card h2 {
+            color: #00ff88;
+            font-size: 1.1rem;
+            font-weight: 600;
+            padding-bottom: 10px;
+            border-bottom: 1px solid #2a2a4a;
+        }
+
+        .settings-card p {
+            color: #aaa;
+            font-size: 0.88rem;
+            line-height: 1.4;
+        }
+
+        /* ── STATUS BADGES AND LABELS ─────────────────────────────── */
+        .status-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px 0;
+            border-bottom: 1px solid #1f1f35;
+        }
+
+        .status-row:last-child { border-bottom: none; }
+
+        .status-label {
+            color: #888;
+            font-size: 0.88rem;
+        }
+
+        .status-val {
+            font-size: 0.88rem;
+            font-weight: 600;
+        }
+
+        /* Status Badge Styling */
+        .indicator {
+            padding: 3px 10px;
+            border-radius: 12px;
+            font-size: 0.78rem;
+            font-weight: 700;
+        }
+
+        .indicator-green { background: #00ff8822; color: #00ff88; border: 1px solid #00ff8844; }
+        .indicator-red { background: #ff444422; color: #ff4444; border: 1px solid #ff444444; }
+
+        /* ── INTERACTIVE CONTROLS ─────────────────────────────────── */
+        .control-row {
+            display: flex;
+            gap: 10px;
+            margin-top: 6px;
+        }
+
+        input[type="text"] {
+            flex: 1;
+            background: #0f0f1a;
+            border: 1px solid #2a2a4a;
+            color: #e0e0e0;
+            padding: 8px 12px;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+
+        input[type="text"]:focus { border-color: #00ff88; }
+
+        .btn {
+            padding: 9px 18px;
+            border-radius: 8px;
+            border: none;
+            font-size: 0.88rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: opacity 0.2s;
+        }
+
+        .btn:hover { opacity: 0.85; }
+
+        .btn-primary { background: #00ff88; color: #000; }
+        .btn-danger { background: #ff4444; color: #fff; }
+
+        /* ── THRESHOLDS LIST ──────────────────────────────────────── */
+        .threshold-list {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .threshold-item {
+            background: #0f0f1a;
+            border: 1px solid #2a2a4a;
+            border-radius: 10px;
+            padding: 12px;
+        }
+
+        .threshold-header {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: #e0e0e0;
+            margin-bottom: 4px;
+        }
+
+        .threshold-name { color: #ff9900; }
+
+        .threshold-desc {
+            font-size: 0.78rem;
+            color: #888;
+        }
+
+        /* ── RESPONSES AND LOGS ───────────────────────────────────── */
+        .response-msg {
+            font-size: 0.82rem;
+            padding: 8px 12px;
+            border-radius: 8px;
+            display: none;
+        }
+
+        .response-success { background: #00ff8811; color: #00ff88; border: 1px solid #00ff8822; }
+        .response-error { background: #ff444411; color: #ff4444; border: 1px solid #ff444422; }
+
+        /* ── ACADEMIC INFO ────────────────────────────────────────── */
+        .academic-info {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            font-size: 0.88rem;
+        }
+
+        .academic-row {
+            display: flex;
+            border-bottom: 1px solid #1f1f35;
+            padding: 6px 0;
+        }
+
+        .academic-row:last-child { border-bottom: none; }
+
+        .academic-label {
+            color: #888;
+            width: 120px;
+            flex-shrink: 0;
+        }
+
+        .academic-value {
+            color: #e0e0e0;
+            font-weight: 500;
+        }
     </style>
 </head>
 <body>
-    <a href="/">← Back to Dashboard</a>
-    <h1>⚙️ Settings</h1>
 
-    <div class="card">
-        <h2>Start Sniffer</h2>
-        <p>Enter your network interface name (use <code>ip a</code> on Kali to find it):</p>
-        <input type="text" id="interface-input" value="eth0" placeholder="e.g., eth0, wlan0, enp0s3">
-        <button onclick="startSniffer()">▶ Start</button>
-        <div id="response"></div>
+    <!-- ── PAGE HEADER ─────────────────────────────────────── -->
+    <div class="page-header">
+        <a href="/" class="back-link">← Dashboard</a>
+        <h1>⚙️ Settings</h1>
     </div>
 
-    <div class="card">
-        <h2>Clear All Alerts</h2>
-        <p>This will permanently delete all alerts from the database and CSV file.</p>
-        <button class="danger" onclick="clearAlerts()">🗑️ Clear All Alerts</button>
-        <div id="clear-response"></div>
+    <!-- ── SETTINGS PANELS GRID ────────────────────────────── -->
+    <div class="settings-grid">
+
+        <!-- Card 1: Live System Status Indicator -->
+        <div class="settings-card">
+            <h2>🖥️ System Status</h2>
+            
+            <div class="status-row">
+                <span class="status-label">Packet Sniffer</span>
+                <span class="status-val" id="status-sniffer"><span class="indicator">Loading…</span></span>
+            </div>
+            
+            <div class="status-row">
+                <span class="status-label">ML Model</span>
+                <span class="status-val" id="status-ml"><span class="indicator">Loading…</span></span>
+            </div>
+
+            <div class="status-row">
+                <span class="status-label">Monitored Interface</span>
+                <span class="status-val" id="status-interface" style="color: #00ff88;">⏳ Loading…</span>
+            </div>
+
+            <div class="status-row">
+                <span class="status-label">Total Logs in Database</span>
+                <span class="status-val" id="status-total-logs">⏳ Loading…</span>
+            </div>
+        </div>
+
+        <!-- Card 2: Sniffer Controls -->
+        <div class="settings-card">
+            <h2>📡 Sniffer Control</h2>
+            <p>Enter the interface name to monitor (use <code>ip a</code> in Kali Linux to view available cards):</p>
+            
+            <div class="control-row">
+                <input type="text" id="interface-input" value="eth0" placeholder="e.g. eth0, wlan0">
+                <button class="btn btn-primary" id="start-btn">▶ Start</button>
+            </div>
+            
+            <!-- Output response box -->
+            <div class="response-msg" id="sniffer-response"></div>
+        </div>
+
+        <!-- Card 3: Clear Database -->
+        <div class="settings-card">
+            <h2>🗑️ Clear Log Database</h2>
+            <p>This action permanently deletes all alert records from the SQLite database and CSV logs file.</p>
+            
+            <div>
+                <button class="btn btn-danger" id="clear-btn">Wipe Database Alerts</button>
+            </div>
+            
+            <!-- Output response box -->
+            <div class="response-msg" id="clear-response"></div>
+        </div>
+
     </div>
 
+    <div class="settings-grid">
+
+        <!-- Card 4: Detection Thresholds -->
+        <div class="settings-card">
+            <h2>📊 Rule Thresholds (Read-Only)</h2>
+            <div class="threshold-list">
+                
+                <!-- DoS Threshold -->
+                <div class="threshold-item">
+                    <div class="threshold-header">
+                        <span class="threshold-name">Denial of Service (DoS)</span>
+                        <span>100 pkts / sec</span>
+                    </div>
+                    <div class="threshold-desc">Triggered if packets from a single source exceed 100 in 1 second.</div>
+                </div>
+
+                <!-- Port Scan Threshold -->
+                <div class="threshold-item">
+                    <div class="threshold-header">
+                        <span class="threshold-name">Port Scan</span>
+                        <span>20 ports / 10 sec</span>
+                    </div>
+                    <div class="threshold-desc">Triggered if unique destinations ports from a source exceed 20 in 10 seconds.</div>
+                </div>
+
+                <!-- SYN Flood Threshold -->
+                <div class="threshold-item">
+                    <div class="threshold-header">
+                        <span class="threshold-name">SYN Flood</span>
+                        <span>200 SYN / 10 sec</span>
+                    </div>
+                    <div class="threshold-desc">Triggered if TCP SYN packets from a source exceed 200 in 10 seconds.</div>
+                </div>
+
+                <!-- ICMP Flood Threshold -->
+                <div class="threshold-item">
+                    <div class="threshold-header">
+                        <span class="threshold-name">ICMP Flood</span>
+                        <span>50 ICMP / 5 sec</span>
+                    </div>
+                    <div class="threshold-desc">Triggered if ICMP ping packets from a source exceed 50 in 5 seconds.</div>
+                </div>
+
+                <!-- Brute Force Threshold -->
+                <div class="threshold-item">
+                    <div class="threshold-header">
+                        <span class="threshold-name">Brute Force</span>
+                        <span>5 RST / 30 sec</span>
+                    </div>
+                    <div class="threshold-desc">Triggered if TCP RST packets from a source exceed 5 in 30 seconds.</div>
+                </div>
+
+            </div>
+            <p style="font-style: italic; font-size: 0.78rem; text-align: center; margin-top: 8px;">
+                Note: Thresholds are configured in detector.py
+            </p>
+        </div>
+
+        <!-- Card 5: System & Academic Metadata -->
+        <div class="settings-card">
+            <h2>🎓 System Details</h2>
+            <div class="academic-info">
+                <div class="academic-row">
+                    <span class="academic-label">Project</span>
+                    <span class="academic-value">Network-Based Intrusion Detection System</span>
+                </div>
+                <div class="academic-row">
+                    <span class="academic-label">Algorithm</span>
+                    <span class="academic-value">Random Forest (99% Accuracy)</span>
+                </div>
+                <div class="academic-row">
+                    <span class="academic-label">Dataset</span>
+                    <span class="academic-value">NSL-KDD</span>
+                </div>
+                <div class="academic-row">
+                    <span class="academic-label">Developers</span>
+                    <span class="academic-value">Bipin Pandey & MD Mojibul Rahman</span>
+                </div>
+                <div class="academic-row">
+                    <span class="academic-label">College</span>
+                    <span class="academic-value">Asian College of Higher Studies</span>
+                </div>
+                <div class="academic-row">
+                    <span class="academic-label">University</span>
+                    <span class="academic-value">Tribhuvan University</span>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- ── INLINE JAVASCRIPT JQUERY-FREE CONTROLS ──────────── -->
     <script>
-        function startSniffer() {
-            const iface = document.getElementById('interface-input').value;
-            fetch('/api/sniffer/start', {
-                method: 'POST',
-                headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({interface: iface})
-            }).then(r => r.json()).then(data => {
-                document.getElementById('response').textContent = '✅ ' + data.message;
-            }).catch(err => {
-                document.getElementById('response').textContent = '❌ Error: ' + err;
+        // ── LOAD STATE ACTIONS ───────────────────────────────────────────────
+
+        // showLoading() — Displays visual placeholder loader labels inside
+        // status elements when fetching fresh details from backend.
+        function showLoading() {
+            // Check if status label elements exist and update text
+            var snifferStatusEl = document.getElementById('status-sniffer');
+            var mlStatusEl = document.getElementById('status-ml');
+            var interfaceEl = document.getElementById('status-interface');
+            var logsEl = document.getElementById('status-total-logs');
+
+            if (snifferStatusEl) snifferStatusEl.innerHTML = '<span class="indicator">Loading…</span>';
+            if (mlStatusEl) mlStatusEl.innerHTML = '<span class="indicator">Loading…</span>';
+            if (interfaceEl) interfaceEl.textContent = '⏳ Loading…';
+            if (logsEl) logsEl.textContent = '⏳ Loading…';
+        }
+
+        // ── UPDATE SYSTEM STATUS ─────────────────────────────────────────────
+
+        // updateSystemStatus() — Pulls status measurements from backend API
+        // concurrently and updates DOM node values.
+        function updateSystemStatus() {
+            // Concurrently query stats and ml-ready values
+            Promise.all([
+                fetch('/api/stats').then(function(r) { return r.json(); }),
+                fetch('/api/ml-status').then(function(r) { return r.json(); })
+            ])
+            .then(function(results) {
+                var statsData = results[0];
+                var mlData = results[1];
+
+                // ── Parse Sniffer Status ──
+                var snifferRunning = false;
+                var interfaceName = 'N/A';
+                if (statsData.sniffer_stats) {
+                    snifferRunning = statsData.sniffer_stats.is_running;
+                    interfaceName = statsData.sniffer_stats.interface || 'N/A';
+                }
+
+                var snifferEl = document.getElementById('status-sniffer');
+                if (snifferRunning) {
+                    snifferEl.innerHTML = '<span class="indicator indicator-green">Running</span>';
+                } else {
+                    snifferEl.innerHTML = '<span class="indicator indicator-red">Stopped</span>';
+                }
+
+                // ── Parse ML Status ──
+                var mlEl = document.getElementById('status-ml');
+                if (mlData && mlData.ml_ready) {
+                    mlEl.innerHTML = '<span class="indicator indicator-green">Active</span>';
+                } else {
+                    mlEl.innerHTML = '<span class="indicator indicator-red">Offline</span>';
+                }
+
+                // ── Update Interface and Logs count ──
+                document.getElementById('status-interface').textContent = interfaceName;
+                
+                var totalLogs = 0;
+                if (statsData.alert_stats) {
+                    totalLogs = statsData.alert_stats.total;
+                }
+                document.getElementById('status-total-logs').textContent = totalLogs;
+            })
+            .catch(function(err) {
+                console.error('[NIDS] Failed to retrieve system statistics:', err);
+                
+                // Show offline fallback indicators
+                document.getElementById('status-sniffer').innerHTML = '<span class="indicator indicator-red">Error</span>';
+                document.getElementById('status-ml').innerHTML = '<span class="indicator indicator-red">Offline</span>';
+                document.getElementById('status-interface').textContent = 'Disconnected';
+                document.getElementById('status-total-logs').textContent = 'N/A';
             });
         }
 
-        function clearAlerts() {
-            if (!confirm('Are you sure you want to clear ALL alerts? This cannot be undone.')) return;
-            fetch('/api/alerts/clear', {method: 'POST'})
-                .then(r => r.json())
-                .then(data => {
-                    document.getElementById('clear-response').textContent = '✅ ' + data.message;
-                });
+        // ── START SNIFFER CONTROLS ───────────────────────────────────────────
+
+        // startSniffer() — Retrieves user-specified interface text and triggers
+        // a post request to launch Scapy sniffer background thread.
+        function startSniffer() {
+            var ifaceInput = document.getElementById('interface-input').value.trim();
+            var responseBox = document.getElementById('sniffer-response');
+
+            // Show checking feedback
+            responseBox.className = 'response-msg';
+            responseBox.style.display = 'block';
+            responseBox.textContent = '⏳ Starting sniffer thread…';
+
+            if (!ifaceInput) {
+                responseBox.className = 'response-msg response-error';
+                responseBox.textContent = '❌ Please enter a valid network interface.';
+                return;
+            }
+
+            // POST interface to start sniffer route
+            fetch('/api/sniffer/start', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ interface: ifaceInput })
+            })
+            .then(function(res) { return res.json(); })
+            .then(function(data) {
+                if (data.status === 'ok' || data.status === 'already_running') {
+                    responseBox.className = 'response-msg response-success';
+                    responseBox.textContent = '✅ ' + data.message;
+                } else {
+                    responseBox.className = 'response-msg response-error';
+                    responseBox.textContent = '❌ ' + (data.message || 'Failed to start sniffer.');
+                }
+                // Refresh status metrics immediately
+                updateSystemStatus();
+            })
+            .catch(function(err) {
+                responseBox.className = 'response-msg response-error';
+                responseBox.textContent = '❌ Connection error: ' + err;
+            });
         }
+
+        // ── CLEAR ALERTS DATABASE ────────────────────────────────────────────
+
+        // clearAlerts() — Spawns confirmation window, then triggers database
+        // and CSV wipe request, refreshing active measurements.
+        function clearAlerts() {
+            var responseBox = document.getElementById('clear-response');
+
+            // Trigger prompt validation check
+            var confirmWipe = confirm('Are you sure you want to clear ALL alerts? This cannot be undone.');
+            if (!confirmWipe) return;
+
+            responseBox.className = 'response-msg';
+            responseBox.style.display = 'block';
+            responseBox.textContent = '⏳ Clearing logs…';
+
+            // Send POST query to clear alerts
+            fetch('/api/alerts/clear', { method: 'POST' })
+            .then(function(res) { return res.json(); })
+            .then(function(data) {
+                responseBox.className = 'response-msg response-success';
+                responseBox.textContent = '✅ ' + (data.message || 'Alert database wiped successfully.');
+                
+                // Immediately update status cards to reflect 0 logs
+                updateSystemStatus();
+            })
+            .catch(function(err) {
+                responseBox.className = 'response-msg response-error';
+                responseBox.textContent = '❌ Failed to clear database: ' + err;
+            });
+        }
+
+        // ── BIND EVENT LISTENERS ─────────────────────────────────────────────
+
+        document.addEventListener('DOMContentLoaded', function() {
+            // Apply initial loading state labels
+            showLoading();
+
+            // Run status refresh on load
+            updateSystemStatus();
+
+            // Setup button event click actions
+            document.getElementById('start-btn').addEventListener('click', startSniffer);
+            document.getElementById('clear-btn').addEventListener('click', clearAlerts);
+
+            // Configure automatic refresh polling every 5 seconds
+            setInterval(updateSystemStatus, 5000);
+        });
     </script>
 </body>
 </html>
