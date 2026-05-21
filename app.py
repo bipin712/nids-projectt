@@ -147,6 +147,22 @@ def api_clear_alerts():
     # Return a success message
     return jsonify({'status': 'ok', 'message': 'All alerts cleared'})
 
+# API route to download all alerts as a CSV file
+@app.route('/api/alerts/download')
+def api_download_alerts():
+    # Import send_file so Flask can send a file as a download to the browser
+    from flask import send_file
+    # Build the path to the CSV file using os.path.join so it works on all operating systems
+    csv_path = os.path.join('logs', 'alerts.csv')
+    # Check if the CSV file actually exists before trying to send it
+    if not os.path.exists(csv_path):
+        # If file does not exist, return an error message as JSON
+        return jsonify({'status': 'error', 'message': 'No alerts CSV found. Generate some alerts first.'})
+    # Send the CSV file to the browser as a downloadable attachment
+    # as_attachment=True tells the browser to download it instead of displaying it
+    # download_name sets the filename that appears in the browser's save dialog
+    return send_file(csv_path, as_attachment=True, download_name='alerts.csv')
+
 # API route to generate a manual test alert inside the running server process
 @app.route('/api/test_alert')
 def api_test_alert():
