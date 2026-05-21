@@ -171,6 +171,31 @@ def api_test_alert():
     # Return a success message with the alert details
     return jsonify({'status': 'ok', 'alert': alert})
 
+# API route to get the ML model status and information
+@app.route('/api/ml-status')
+def api_ml_status():
+    # Import the ml_classifier module to read model info
+    import ml_classifier
+    # Check if the ML model is loaded and ready
+    ready = ml_classifier.is_ready()
+    # Build a response dictionary with all model information
+    result = {
+        # Whether the model file was loaded successfully
+        'ml_ready': ready,
+        # The machine learning algorithm used
+        'algorithm': 'Random Forest',
+        # The dataset used for training
+        'dataset': 'NSL-KDD (148,517 combined records)',
+        # The accuracy achieved on test data
+        'accuracy': '99%',
+        # The number of decision trees in the Random Forest
+        'trees': 200,
+        # The list of attack classes the model can detect
+        'classes': ['normal', 'dos', 'probe', 'r2l', 'u2r']
+    }
+    # Return the result as JSON so the frontend JavaScript can read it
+    return jsonify(result)
+
 # -------------------------------------------------------------------
 # WEBSOCKET EVENTS
 # -------------------------------------------------------------------

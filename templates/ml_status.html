@@ -1,49 +1,558 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+    <!-- Character encoding for proper text display -->
     <meta charset="UTF-8">
-    <title>NIDS — ML Status</title>
+    <!-- Responsive viewport for all screen sizes -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <!-- Page title shown in the browser tab -->
+    <title>NIDS — ML Model Status</title>
     <style>
-        body { font-family: Arial, sans-serif; background: #0f0f1a; color: #e0e0e0; padding: 30px; text-align: center; }
-        h1 { color: #00ff88; }
-        .badge { display: inline-block; padding: 10px 30px; border-radius: 50px; font-size: 1.5rem; margin: 20px; }
-        .ready { background: #00ff8833; color: #00ff88; border: 2px solid #00ff88; }
-        .not-ready { background: #ff444433; color: #ff4444; border: 2px solid #ff4444; }
-        .card { background: #1a1a2e; border: 1px solid #333; border-radius: 10px; padding: 20px; margin: 20px auto; max-width: 500px; }
-        a { color: #00ff88; }
+        /* ── RESET & BASE ─────────────────────────────────────────── */
+        /* Remove default browser margins and padding */
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        /* Dark background body with light text */
+        body {
+            font-family: 'Segoe UI', Arial, sans-serif;
+            background: #0f0f1a;
+            color: #e0e0e0;
+            min-height: 100vh;
+            padding: 24px;
+        }
+
+        /* ── HEADER ───────────────────────────────────────────────── */
+        /* Top bar with back link and page title */
+        .page-header {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            margin-bottom: 28px;
+        }
+
+        /* Back link styled as a soft green button */
+        .back-link {
+            color: #00ff88;
+            text-decoration: none;
+            font-size: 0.9rem;
+            padding: 6px 14px;
+            border: 1px solid #00ff8844;
+            border-radius: 6px;
+            transition: background 0.2s;
+        }
+
+        /* Hover effect on back link */
+        .back-link:hover { background: #00ff8811; }
+
+        /* Page heading */
+        h1 { color: #00ff88; font-size: 1.7rem; font-weight: 700; }
+
+        /* ── STATUS BANNER ────────────────────────────────────────── */
+        /* Large banner at the top showing active/offline status */
+        .status-banner {
+            text-align: center;
+            padding: 24px;
+            border-radius: 14px;
+            margin-bottom: 28px;
+        }
+
+        /* Green banner for active model */
+        .status-active {
+            background: linear-gradient(135deg, #00ff8815, #00ff8808);
+            border: 1px solid #00ff8833;
+        }
+
+        /* Red banner for offline model */
+        .status-offline {
+            background: linear-gradient(135deg, #ff444415, #ff444408);
+            border: 1px solid #ff444433;
+        }
+
+        /* Large status badge text */
+        .status-badge {
+            display: inline-block;
+            padding: 10px 32px;
+            border-radius: 50px;
+            font-size: 1.3rem;
+            font-weight: 700;
+            margin-bottom: 8px;
+        }
+
+        /* Green badge for active */
+        .badge-active {
+            background: #00ff8822;
+            color: #00ff88;
+            border: 2px solid #00ff88;
+        }
+
+        /* Red badge for offline */
+        .badge-offline {
+            background: #ff444422;
+            color: #ff4444;
+            border: 2px solid #ff4444;
+        }
+
+        /* Subtitle text under the badge */
+        .status-sub {
+            color: #888;
+            font-size: 0.9rem;
+            margin-top: 8px;
+        }
+
+        /* ── ACCURACY SECTION ─────────────────────────────────────── */
+        /* Prominent accuracy display with progress bar */
+        .accuracy-section {
+            background: #16162a;
+            border: 1px solid #2a2a4a;
+            border-radius: 14px;
+            padding: 28px;
+            margin-bottom: 24px;
+            text-align: center;
+        }
+
+        /* Large accuracy number */
+        .accuracy-number {
+            font-size: 3.5rem;
+            font-weight: 800;
+            color: #00ff88;
+            line-height: 1;
+        }
+
+        /* Label text under the number */
+        .accuracy-label {
+            color: #888;
+            font-size: 0.95rem;
+            margin-top: 6px;
+            margin-bottom: 18px;
+        }
+
+        /* Outer track of the progress bar */
+        .progress-track {
+            background: #0f0f1a;
+            border-radius: 12px;
+            height: 18px;
+            width: 100%;
+            max-width: 500px;
+            margin: 0 auto;
+            overflow: hidden;
+            border: 1px solid #2a2a4a;
+        }
+
+        /* Inner filled portion of the progress bar */
+        .progress-fill {
+            height: 100%;
+            border-radius: 12px;
+            background: linear-gradient(90deg, #00cc66, #00ff88);
+            transition: width 1s ease;
+            width: 0%;
+        }
+
+        /* ── CARD GRID ────────────────────────────────────────────── */
+        /* Responsive grid layout for information cards */
+        .card-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+            gap: 20px;
+            margin-bottom: 24px;
+        }
+
+        /* Individual card container */
+        .card {
+            background: #16162a;
+            border: 1px solid #2a2a4a;
+            border-radius: 14px;
+            padding: 24px;
+        }
+
+        /* Card title heading */
+        .card h2 {
+            color: #00ff88;
+            font-size: 1.1rem;
+            font-weight: 600;
+            margin-bottom: 16px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid #2a2a4a;
+        }
+
+        /* ── INFO ROWS ────────────────────────────────────────────── */
+        /* Label-value rows inside cards */
+        .info-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px 0;
+            border-bottom: 1px solid #1f1f35;
+        }
+
+        /* Last row does not need bottom border */
+        .info-row:last-child { border-bottom: none; }
+
+        /* Left side label text */
+        .info-label {
+            color: #888;
+            font-size: 0.88rem;
+        }
+
+        /* Right side value text */
+        .info-value {
+            color: #e0e0e0;
+            font-size: 0.88rem;
+            font-weight: 600;
+        }
+
+        /* ── CLASS BADGES ─────────────────────────────────────────── */
+        /* Container for the row of class badges */
+        .class-badges {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-top: 12px;
+        }
+
+        /* Base badge style for all class labels */
+        .class-badge {
+            padding: 6px 16px;
+            border-radius: 20px;
+            font-size: 0.82rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        /* normal class — green badge */
+        .class-normal  { background: #00ff8822; color: #00ff88; border: 1px solid #00ff8844; }
+        /* dos class — red badge */
+        .class-dos     { background: #ff444422; color: #ff4444; border: 1px solid #ff444444; }
+        /* probe class — orange badge */
+        .class-probe   { background: #ff990022; color: #ff9900; border: 1px solid #ff990044; }
+        /* r2l class — yellow badge */
+        .class-r2l     { background: #ffdd0022; color: #ffdd00; border: 1px solid #ffdd0044; }
+        /* u2r class — purple badge */
+        .class-u2r     { background: #aa44ff22; color: #bb77ff; border: 1px solid #aa44ff44; }
+
+        /* ── CLASS TABLE ──────────────────────────────────────────── */
+        /* Full-width table for class descriptions */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.88rem;
+        }
+
+        /* Table header cells */
+        th {
+            background: #1a1a2e;
+            color: #00ff88;
+            padding: 12px 14px;
+            text-align: left;
+            font-weight: 600;
+            border-bottom: 2px solid #2a2a4a;
+        }
+
+        /* Table data cells */
+        td {
+            padding: 11px 14px;
+            border-bottom: 1px solid #1f1f35;
+            vertical-align: middle;
+        }
+
+        /* Hover highlight on rows */
+        tr:hover td { background: #1a1a2e; }
+
+        /* ── ERROR STATE ──────────────────────────────────────────── */
+        /* Red warning box shown when model is offline */
+        .error-box {
+            background: #ff444411;
+            border: 1px solid #ff444444;
+            border-radius: 10px;
+            padding: 20px;
+            text-align: center;
+            color: #ff6666;
+            margin-bottom: 20px;
+            display: none;
+        }
+
+        /* Instruction text inside error box */
+        .error-box p { margin-top: 8px; color: #aaa; font-size: 0.9rem; }
     </style>
 </head>
 <body>
-    <a href="/">← Back to Dashboard</a>
-    <h1>🤖 ML Model Status</h1>
-    <div class="card">
-        <div id="ml-badge" class="badge">Checking...</div>
-        <p>Model: Random Forest (NSL-KDD Dataset)</p>
-        <p>Accuracy: 99%</p>
-        <p>Classes: dos, normal, probe, r2l, u2r</p>
+
+    <!-- ── PAGE HEADER ─────────────────────────────────────── -->
+    <div class="page-header">
+        <!-- Back link to dashboard -->
+        <a href="/" class="back-link">← Dashboard</a>
+        <!-- Page title -->
+        <h1>🤖 ML Model Status</h1>
     </div>
-    <div class="card">
-        <h2>Sniffer Status</h2>
-        <div id="sniffer-status">Loading...</div>
+
+    <!-- ── ERROR BOX (hidden by default, shown if model not loaded) ── -->
+    <div class="error-box" id="error-box">
+        <strong>⚠️ ML Model Not Loaded</strong>
+        <p>Run <code>train_model.py</code> first to generate <code>rf_model.pkl</code></p>
     </div>
+
+    <!-- ── STATUS BANNER ───────────────────────────────────── -->
+    <div class="status-banner" id="status-banner">
+        <!-- Large badge showing active or offline -->
+        <div class="status-badge" id="status-badge">⏳ Checking…</div>
+        <!-- Subtitle with algorithm and dataset -->
+        <div class="status-sub" id="status-sub">Loading model information…</div>
+    </div>
+
+    <!-- ── ACCURACY SECTION ────────────────────────────────── -->
+    <div class="accuracy-section">
+        <!-- Big accuracy number -->
+        <div class="accuracy-number" id="accuracy-number">—</div>
+        <!-- Label under the number -->
+        <div class="accuracy-label" id="accuracy-label">Accuracy on test set</div>
+        <!-- Progress bar track -->
+        <div class="progress-track">
+            <!-- Filled portion — width is set dynamically by JavaScript -->
+            <div class="progress-fill" id="progress-fill"></div>
+        </div>
+    </div>
+
+    <!-- ── CARD GRID: MODEL INFO + DETECTED CLASSES ────────── -->
+    <div class="card-grid">
+
+        <!-- Model Information Card -->
+        <div class="card">
+            <h2>📋 Model Information</h2>
+            <!-- Each info-row shows a label and a value side by side -->
+            <div class="info-row">
+                <span class="info-label">Algorithm</span>
+                <span class="info-value" id="info-algorithm">—</span>
+            </div>
+            <div class="info-row">
+                <span class="info-label">Training Dataset</span>
+                <span class="info-value" id="info-dataset">—</span>
+            </div>
+            <div class="info-row">
+                <span class="info-label">Training Samples</span>
+                <span class="info-value">148,517 (combined)</span>
+            </div>
+            <div class="info-row">
+                <span class="info-label">Test Samples</span>
+                <span class="info-value">29,703 (20% split)</span>
+            </div>
+            <div class="info-row">
+                <span class="info-label">SMOTE Applied</span>
+                <span class="info-value" style="color: #00ff88;">Yes</span>
+            </div>
+            <div class="info-row">
+                <span class="info-label">Class Balancing</span>
+                <span class="info-value">All 5 classes balanced equally</span>
+            </div>
+            <div class="info-row">
+                <span class="info-label">Decision Trees</span>
+                <span class="info-value" id="info-trees">—</span>
+            </div>
+            <div class="info-row">
+                <span class="info-label">Training Time</span>
+                <span class="info-value">≈ 8–15 minutes</span>
+            </div>
+            <div class="info-row">
+                <span class="info-label">Saved As</span>
+                <span class="info-value">rf_model.pkl</span>
+            </div>
+        </div>
+
+        <!-- Detected Classes Card -->
+        <div class="card">
+            <h2>🎯 Detected Classes</h2>
+            <!-- Class badges are injected here by JavaScript -->
+            <div class="class-badges" id="class-badges">
+                <!-- Populated dynamically -->
+            </div>
+
+            <!-- Class descriptions table -->
+            <table style="margin-top: 20px;">
+                <thead>
+                    <tr>
+                        <th>Class</th>
+                        <th>Description</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <!-- normal class row -->
+                        <td><span class="class-badge class-normal">normal</span></td>
+                        <td>Legitimate network traffic</td>
+                    </tr>
+                    <tr>
+                        <!-- dos class row -->
+                        <td><span class="class-badge class-dos">dos</span></td>
+                        <td>Denial of Service attacks (smurf, neptune, back…)</td>
+                    </tr>
+                    <tr>
+                        <!-- probe class row -->
+                        <td><span class="class-badge class-probe">probe</span></td>
+                        <td>Port scanning / reconnaissance (nmap, ipsweep…)</td>
+                    </tr>
+                    <tr>
+                        <!-- r2l class row -->
+                        <td><span class="class-badge class-r2l">r2l</span></td>
+                        <td>Remote to Local (guess_passwd, ftp_write…)</td>
+                    </tr>
+                    <tr>
+                        <!-- u2r class row -->
+                        <td><span class="class-badge class-u2r">u2r</span></td>
+                        <td>User to Root (buffer_overflow, rootkit…)</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- ── INLINE JAVASCRIPT ───────────────────────────────── -->
     <script>
-        fetch('/api/sniffer/status').then(r => r.json()).then(data => {
-            const s = data.sniffer;
-            document.getElementById('sniffer-status').innerHTML =
-                'Packets Captured: ' + s.packets_captured + '<br>' +
-                'Alerts Generated: ' + s.alerts_generated + '<br>' +
-                'Running: ' + (s.is_running ? '✅ Yes' : '❌ No') + '<br>' +
-                'Interface: ' + s.interface;
-        });
-        // Check ML status
-        fetch('/api/stats').then(r => r.json()).then(data => {
-            const badge = document.getElementById('ml-badge');
-            badge.textContent = '✅ ML Model Ready';
-            badge.className = 'badge ready';
-        }).catch(() => {
-            const badge = document.getElementById('ml-badge');
-            badge.textContent = '❌ ML Model Not Ready';
-            badge.className = 'badge not-ready';
+        // ── CLASS-TO-CSS MAPPING ────────────────────────────────────────────
+
+        // classColors maps each ML class name to its CSS class for the badge
+        // This is used by buildClassBadges() to colour each badge correctly
+        var classColors = {
+            'normal': 'class-normal',   // green badge for normal traffic
+            'dos':    'class-dos',      // red badge for DoS attacks
+            'probe':  'class-probe',    // orange badge for probe/scan attacks
+            'r2l':    'class-r2l',      // yellow badge for remote-to-local attacks
+            'u2r':    'class-u2r'       // purple badge for user-to-root attacks
+        };
+
+        // ── FETCH ML STATUS FROM SERVER ──────────────────────────────────────
+
+        // fetchMLStatus() — Loads the ML model info from the backend API
+        // and populates all the page elements with the returned data
+        function fetchMLStatus() {
+            // Call the Flask API endpoint that returns ML model information
+            fetch('/api/ml-status')
+                // Parse the JSON response when it arrives
+                .then(function(response) { return response.json(); })
+                // Process the parsed data
+                .then(function(data) {
+                    // Call the function that updates all page elements
+                    populatePage(data);
+                })
+                // Handle any network or parsing errors
+                .catch(function(err) {
+                    // Log the error to the browser console for debugging
+                    console.error('[NIDS] Failed to fetch ML status:', err);
+                    // Show the error state so the user knows something went wrong
+                    showOfflineState();
+                });
+        }
+
+        // ── POPULATE PAGE WITH DATA ──────────────────────────────────────────
+
+        // populatePage(data) — Takes the API response object and fills
+        // all the HTML elements with the correct values and styles
+        function populatePage(data) {
+            // Get the main elements we need to update
+            var banner = document.getElementById('status-banner');
+            var badge  = document.getElementById('status-badge');
+            var sub    = document.getElementById('status-sub');
+            var errorBox = document.getElementById('error-box');
+
+            // Check if the ML model is loaded and ready
+            if (data.ml_ready) {
+                // ── MODEL IS ACTIVE ─────────────────────────────────
+                // Apply the green active styling to the banner
+                banner.className = 'status-banner status-active';
+                // Set the badge text to show active status with checkmark
+                badge.textContent = '✅ ML Model Active';
+                // Apply the green badge CSS class
+                badge.className = 'status-badge badge-active';
+                // Show algorithm and dataset in the subtitle
+                sub.textContent = data.algorithm + ' — ' + data.dataset;
+                // Hide the error box since everything is working
+                errorBox.style.display = 'none';
+            } else {
+                // ── MODEL IS OFFLINE ────────────────────────────────
+                // Show the red offline state instead
+                showOfflineState();
+                // Still fill in whatever data we have
+            }
+
+            // ── ACCURACY DISPLAY ────────────────────────────────────
+            // Extract just the number from the accuracy string (e.g. "99%" → 99)
+            var accText = data.accuracy || '0%';
+            // Remove the % sign and convert to a number
+            var accNum = parseInt(accText.replace('%', ''), 10) || 0;
+            // Set the large accuracy number text
+            document.getElementById('accuracy-number').textContent = accText;
+            // Set the label under the number
+            document.getElementById('accuracy-label').textContent = accText + ' accuracy on test set';
+            // Animate the progress bar to the correct width after a short delay
+            // The delay allows the CSS transition to animate smoothly from 0% to the value
+            setTimeout(function() {
+                document.getElementById('progress-fill').style.width = accNum + '%';
+            }, 200);
+
+            // ── MODEL INFO FIELDS ───────────────────────────────────
+            // Fill in algorithm name
+            document.getElementById('info-algorithm').textContent = data.algorithm || '—';
+            // Fill in dataset name
+            document.getElementById('info-dataset').textContent = data.dataset || '—';
+            // Fill in number of trees
+            document.getElementById('info-trees').textContent = data.trees || '—';
+
+            // ── CLASS BADGES ────────────────────────────────────────
+            // Build and insert the coloured class badges
+            buildClassBadges(data.classes || []);
+        }
+
+        // ── SHOW OFFLINE STATE ───────────────────────────────────────────────
+
+        // showOfflineState() — Displays the red error banner when the model is not loaded
+        function showOfflineState() {
+            // Get the banner and badge elements
+            var banner = document.getElementById('status-banner');
+            var badge  = document.getElementById('status-badge');
+            var sub    = document.getElementById('status-sub');
+
+            // Apply red offline styling to the banner
+            banner.className = 'status-banner status-offline';
+            // Set badge text to show offline warning
+            badge.textContent = '❌ ML Model Offline';
+            // Apply the red badge CSS class
+            badge.className = 'status-badge badge-offline';
+            // Update subtitle with instruction
+            sub.textContent = 'Model file not found or failed to load';
+            // Show the error instruction box
+            document.getElementById('error-box').style.display = 'block';
+        }
+
+        // ── BUILD CLASS BADGES ───────────────────────────────────────────────
+
+        // buildClassBadges(classes) — Creates coloured badge elements for each ML class
+        // classes is an array of strings like ['normal', 'dos', 'probe', 'r2l', 'u2r']
+        function buildClassBadges(classes) {
+            // Get the container div where badges will be inserted
+            var container = document.getElementById('class-badges');
+
+            // Clear any existing badges from a previous load
+            container.innerHTML = '';
+
+            // Loop through each class name in the array
+            classes.forEach(function(cls) {
+                // Create a new <span> element for the badge
+                var span = document.createElement('span');
+                // Look up the CSS class for this ML class, or use a default
+                var cssClass = classColors[cls] || '';
+                // Set the CSS classes: base badge style + colour-specific class
+                span.className = 'class-badge ' + cssClass;
+                // Set the text inside the badge to the class name in uppercase
+                span.textContent = cls.toUpperCase();
+                // Add the badge element to the container
+                container.appendChild(span);
+            });
+        }
+
+        // ── INITIALISE ON PAGE LOAD ──────────────────────────────────────────
+
+        // Wait for the DOM to be fully loaded before running
+        document.addEventListener('DOMContentLoaded', function() {
+            // Fetch and display ML status immediately
+            fetchMLStatus();
         });
     </script>
 </body>
