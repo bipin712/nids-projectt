@@ -11,6 +11,10 @@
         .label { color: #aaa; font-size: 0.9rem; }
         a { color: #00ff88; }
     </style>
+    <!-- Include Chart.js library from CDN to render graphs -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Include our custom charts logic script -->
+    <script src="/static/js/charts.js"></script>
 </head>
 <body>
     <a href="/">← Back to Dashboard</a>
@@ -27,6 +31,26 @@
         <div class="stat" id="medium" style="color:#ffd700">--</div>
         <div class="label">Medium Severity</div>
     </div>
+
+    <!-- Container to show warning if no alerts exist in the database -->
+    <div id="no-data-message" class="card" style="display: none; color: #ff4444; font-size: 1.2rem;">
+        ⚠️ No attacks detected yet
+    </div>
+    
+    <!-- Card container for the Attack Type distribution pie chart -->
+    <div class="card" style="max-width: 600px; margin: 20px auto;">
+        <div style="position: relative; height: 350px; width: 100%;">
+            <canvas id="attack-type-chart"></canvas>
+        </div>
+    </div>
+    
+    <!-- Card container for the Alerts by Severity bar chart -->
+    <div class="card" style="max-width: 600px; margin: 20px auto;">
+        <div style="position: relative; height: 350px; width: 100%;">
+            <canvas id="severity-chart"></canvas>
+        </div>
+    </div>
+
     <script>
         fetch('/api/stats').then(r => r.json()).then(data => {
             const s = data.alert_stats;

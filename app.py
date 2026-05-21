@@ -147,6 +147,14 @@ def api_clear_alerts():
     # Return a success message
     return jsonify({'status': 'ok', 'message': 'All alerts cleared'})
 
+# API route to generate a manual test alert inside the running server process
+@app.route('/api/test_alert')
+def api_test_alert():
+    # Call generate_alert inside the alert_logger to trigger the WebSocket push and queue insert
+    alert = alert_logger.generate_alert('192.168.1.99', 'DoS', 'High', 'Rule-Based', 'Manual Test Alert')
+    # Return a success message with the alert details
+    return jsonify({'status': 'ok', 'alert': alert})
+
 # -------------------------------------------------------------------
 # WEBSOCKET EVENTS
 # -------------------------------------------------------------------
