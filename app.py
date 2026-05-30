@@ -50,11 +50,16 @@ database.init_database()
 # PAGE ROUTES (serve HTML pages)
 # -------------------------------------------------------------------
 
-# Route for the main dashboard page (home page)
+# Landing page route (shown when you open the server)
 @app.route('/')
-def index():
-    # Render and return the index.html template from the templates/ folder
+def landing():
+    return render_template('landing.html')
+
+# Route for the dashboard page
+@app.route('/dashboard')
+def dashboard_page():
     return render_template('index.html')
+
 
 # Route for the live alerts page
 @app.route('/alerts')
@@ -239,4 +244,6 @@ if __name__ == '__main__':
     # port=5000 is the standard Flask port
     # debug=False for production/Kali use (set to True for development)
     # use_reloader=False prevents the server from restarting twice on Kali
-    socketio.run(app, host='0.0.0.0', port=5000, debug=False, use_reloader=False)
+    # NOTE: On Windows, eventlet can cause WinError 10048 if the port/address is already in use
+    # or if the selected async mode/engine reuses sockets. Force a safer default for this environment.
+    socketio.run(app, host='127.0.0.1', port=5000, debug=False, use_reloader=False, allow_unsafe_werkzeug=True)

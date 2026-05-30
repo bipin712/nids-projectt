@@ -1,661 +1,246 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <!-- Character encoding for proper text display -->
-    <meta charset="UTF-8">
-    <!-- Responsive viewport so the page scales on all screen sizes -->
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <!-- Page title shown in browser tab -->
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>NIDS — Live Alerts</title>
+    <link rel="stylesheet" href="/static/css/style.css" />
+
     <style>
-        /* ── RESET & BASE ─────────────────────────────────────────── */
-        /* Remove default browser margins and padding */
-        * { margin: 0; padding: 0; box-sizing: border-box; }
+        /* Minimal page-specific styles; use the shared professional theme in /static/css/style.css */
+        .toolbar { margin-bottom: 1.5rem; }
 
-        /* Dark background body with light text and smooth font */
-        body {
-            font-family: 'Segoe UI', Arial, sans-serif;
-            background: #0f0f1a;
-            color: #e0e0e0;
-            min-height: 100vh;
-            padding: 24px;
-        }
+        .btn-group { display: flex; gap: 0.5rem; flex-wrap: wrap; }
 
-        /* ── HEADER ───────────────────────────────────────────────── */
-        /* Top bar containing the back link and page title */
-        .page-header {
-            display: flex;
-            align-items: center;
-            gap: 16px;
-            margin-bottom: 24px;
-        }
-
-        /* Back to dashboard link — styled as a soft button */
-        .back-link {
-            color: #00ff88;
-            text-decoration: none;
-            font-size: 0.9rem;
-            padding: 6px 14px;
-            border: 1px solid #00ff8844;
-            border-radius: 6px;
-            transition: background 0.2s;
-        }
-
-        /* Highlight back link when hovered */
-        .back-link:hover { background: #00ff8811; }
-
-        /* Main heading text */
-        h1 { color: #ff4444; font-size: 1.7rem; font-weight: 700; }
-
-        /* ── TOOLBAR ──────────────────────────────────────────────── */
-        /* The entire controls bar — search, filters, export, refresh */
-        .toolbar {
-            background: #16162a;
-            border: 1px solid #2a2a4a;
-            border-radius: 12px;
-            padding: 18px 20px;
-            margin-bottom: 20px;
-            display: flex;
-            flex-wrap: wrap;
-            gap: 16px;
-            align-items: flex-end;
-        }
-
-        /* Each labeled group inside the toolbar */
-        .filter-group {
-            display: flex;
-            flex-direction: column;
-            gap: 6px;
-        }
-
-        /* Small label above each filter control */
-        .filter-label {
-            font-size: 0.72rem;
-            color: #888;
-            text-transform: uppercase;
-            letter-spacing: 0.08em;
-        }
-
-        /* IP search text input field */
-        #ip-search {
-            background: #0f0f1a;
-            border: 1px solid #2a2a4a;
-            color: #e0e0e0;
-            padding: 8px 14px;
-            border-radius: 8px;
-            font-size: 0.9rem;
-            width: 200px;
-            outline: none;
-            transition: border-color 0.2s;
-        }
-
-        /* Highlight input border when focused */
-        #ip-search:focus { border-color: #00ff88; }
-
-        /* Container for a row of filter buttons */
-        .btn-group { display: flex; gap: 6px; }
-
-        /* Base style for all small filter buttons */
         .filter-btn {
-            padding: 7px 14px;
-            border-radius: 7px;
-            border: 1px solid #2a2a4a;
-            background: #0f0f1a;
-            color: #aaa;
-            font-size: 0.82rem;
-            cursor: pointer;
-            transition: all 0.18s;
-        }
-
-        /* Hover state makes button slightly brighter */
-        .filter-btn:hover { border-color: #555; color: #e0e0e0; }
-
-        /* Active state — glowing green to show the filter is selected */
-        .filter-btn.active {
-            background: #00ff8822;
-            border-color: #00ff88;
-            color: #00ff88;
-        }
-
-        /* Attack type dropdown select element */
-        #type-filter {
-            background: #0f0f1a;
-            border: 1px solid #2a2a4a;
-            color: #e0e0e0;
-            padding: 7px 12px;
-            border-radius: 8px;
+            padding: 0.6rem 1rem;
+            border-radius: 10px;
+            border: 1px solid var(--border);
+            background: var(--surface);
+            color: var(--text-primary);
             font-size: 0.85rem;
-            outline: none;
-            cursor: pointer;
-        }
-
-        /* Action buttons — export and refresh — in a separate group on the right */
-        .action-group {
-            margin-left: auto;
-            display: flex;
-            gap: 10px;
-            align-items: flex-end;
-        }
-
-        /* Base style for action buttons (export, refresh) */
-        .action-btn {
-            padding: 8px 18px;
-            border-radius: 8px;
-            border: none;
-            font-size: 0.88rem;
             cursor: pointer;
             font-weight: 600;
-            transition: opacity 0.2s;
+            transition: all 0.15s ease;
         }
 
-        /* Hover state dims action buttons slightly */
-        .action-btn:hover { opacity: 0.85; }
-
-        /* Export CSV button — green accent */
-        #export-btn { background: #00cc66; color: #000; }
-
-        /* Refresh button — blue accent */
-        #refresh-btn { background: #0066cc; color: #fff; }
-
-        /* ── RESULTS COUNT BAR ────────────────────────────────────── */
-        /* Small bar showing how many alerts are visible */
-        .count-bar {
-            margin-bottom: 10px;
-            font-size: 0.85rem;
-            color: #888;
+        .filter-btn:hover {
+            border-color: var(--accent-blue);
+            color: var(--accent-blue);
         }
 
-        /* The number part of the count is highlighted in green */
-        .count-bar span { color: #00ff88; font-weight: 600; }
+        .filter-btn.active {
+            background: var(--accent-blue);
+            border-color: var(--accent-blue);
+            color: #fff;
+        }
 
-        /* ── TABLE ────────────────────────────────────────────────── */
-        /* Outer wrapper adds scroll on small screens */
+        .action-group { margin-left: auto; display: flex; gap: 0.8rem; align-items: center; }
+
+        .action-btn { background: var(--accent-blue); color: #fff; }
+
+        .count-bar { margin-bottom: 1rem; font-size: 0.9rem; color: var(--text-muted); }
+        .count-bar span { color: var(--accent-blue); font-weight: 600; }
+
         .table-wrapper { overflow-x: auto; }
 
-        /* Full-width, borderless table */
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            font-size: 0.88rem;
-        }
+        .empty-msg { text-align: center; padding: 2.5rem 1rem; color: var(--text-muted); }
 
-        /* Table header cells — dark background with green text */
-        th {
-            background: #1a1a2e;
-            color: #00ff88;
-            padding: 13px 14px;
-            text-align: left;
-            font-weight: 600;
-            border-bottom: 2px solid #2a2a4a;
-            white-space: nowrap;
-        }
+        .badge { padding: 3px 10px; border-radius: 999px; font-size: 0.75rem; font-weight: 700; display: inline-block; white-space: nowrap; }
+        .badge-high { background: #fee2e2; color: #dc2626; }
+        .badge-medium { background: #fef3c7; color: #d97706; }
+        .badge-low { background: #dbeafe; color: #2563eb; }
 
-        /* Table data cells */
-        td {
-            padding: 11px 14px;
-            border-bottom: 1px solid #1f1f35;
-            vertical-align: middle;
-        }
-
-        /* Row hover highlight */
-        tr:hover td { background: #1a1a2e; }
-
-        /* ── SEVERITY BADGES ──────────────────────────────────────── */
-        /* Base style for all severity badges */
-        .badge {
-            padding: 3px 10px;
-            border-radius: 20px;
-            font-size: 0.78rem;
-            font-weight: 700;
-            display: inline-block;
-            white-space: nowrap;
-        }
-
-        /* High severity — red badge */
-        .badge-high { background: #ff444433; color: #ff4444; border: 1px solid #ff444466; }
-
-        /* Medium severity — orange badge */
-        .badge-medium { background: #ff990033; color: #ff9900; border: 1px solid #ff990066; }
-
-        /* Low severity — blue badge */
-        .badge-low { background: #0088ff33; color: #44aaff; border: 1px solid #0088ff66; }
-
-        /* ── METHOD BADGES ────────────────────────────────────────── */
-        /* Rule-Based method — grey badge */
-        .badge-rule { background: #44444433; color: #aaa; border: 1px solid #66666666; }
-
-        /* ML method — blue badge */
-        .badge-ml { background: #0044ff22; color: #88aaff; border: 1px solid #0044ff55; }
-
-        /* Both methods — purple badge */
-        .badge-both { background: #8800ff22; color: #cc88ff; border: 1px solid #8800ff55; }
-
-        /* ── EMPTY STATE MESSAGE ──────────────────────────────────── */
-        /* Shown when no alerts match the current filters */
-        .empty-msg {
-            text-align: center;
-            padding: 40px;
-            color: #555;
-            font-size: 1rem;
-        }
-
-        /* ── AUTO REFRESH INDICATOR ───────────────────────────────── */
-        /* Small pill in the bottom-right showing next refresh countdown */
         #refresh-indicator {
             position: fixed;
             bottom: 20px;
             right: 24px;
-            background: #16162a;
-            border: 1px solid #2a2a4a;
-            color: #555;
-            font-size: 0.78rem;
-            padding: 6px 14px;
-            border-radius: 20px;
+            background: var(--surface);
+            border: 2px solid var(--accent-blue);
+            color: var(--accent-blue);
+            font-size: 0.85rem;
+            padding: 0.6rem 1rem;
+            border-radius: 999px;
+            font-weight: 700;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.08);
         }
-
-        /* The countdown number is highlighted in green */
-        #refresh-indicator span { color: #00ff88; }
     </style>
 </head>
 <body>
+    <nav class="navbar">
+        <div class="navbar-brand">🛡️ NIDS Security System</div>
+        <ul class="navbar-menu">
+            <li><a href="/dashboard">Dashboard</a></li>
+            <li><a href="/alerts">Live Alerts</a></li>
+            <li><a href="/analysis">Analysis</a></li>
+            <li><a href="/ml_status">ML Status</a></li>
+            <li><a href="/logs">Logs</a></li>
+            <li><a href="/settings">Settings</a></li>
+        </ul>
+    </nav>
 
-    <!-- ── PAGE HEADER ─────────────────────────────────────── -->
-    <div class="page-header">
-        <!-- Back link to the main dashboard -->
-        <a href="/" class="back-link">← Dashboard</a>
-        <!-- Page title -->
-        <h1>🚨 Live Alerts</h1>
-    </div>
+    <main class="main-content">
+        <div class="container">
+            <div class="page-header">
+                <h1>🚨 Live Alerts</h1>
+            </div>
 
-    <!-- ── TOOLBAR: SEARCH + FILTERS + ACTIONS ────────────── -->
-    <div class="toolbar">
+            <div class="toolbar">
+                <div class="filter-group">
+                    <span class="filter-label">Search IP</span>
+                    <input type="text" id="ip-search" placeholder="e.g. 192.168.1" />
+                </div>
 
-        <!-- IP Address search filter group -->
-        <div class="filter-group">
-            <span class="filter-label">Search IP</span>
-            <!-- Text input: user types a partial IP and table filters instantly -->
-            <input type="text" id="ip-search" placeholder="e.g. 192.168.1">
-        </div>
+                <div class="filter-group">
+                    <span class="filter-label">Severity</span>
+                    <div class="btn-group" role="group" aria-label="Severity">
+                        <button class="filter-btn active" data-severity="all" type="button">All</button>
+                        <button class="filter-btn" data-severity="High" type="button">High</button>
+                        <button class="filter-btn" data-severity="Medium" type="button">Medium</button>
+                        <button class="filter-btn" data-severity="Low" type="button">Low</button>
+                    </div>
+                </div>
 
-        <!-- Severity filter button group -->
-        <div class="filter-group">
-            <span class="filter-label">Severity</span>
-            <div class="btn-group">
-                <!-- Each button has data-severity to indicate which filter it applies -->
-                <button class="filter-btn active" data-severity="all">All</button>
-                <button class="filter-btn" data-severity="High">High</button>
-                <button class="filter-btn" data-severity="Medium">Medium</button>
-                <button class="filter-btn" data-severity="Low">Low</button>
+                <div class="filter-group">
+                    <span class="filter-label">Attack Type</span>
+                    <select id="type-filter">
+                        <option value="all">All Types</option>
+                        <option value="DoS">DoS</option>
+                        <option value="Port Scan">Port Scan</option>
+                        <option value="SYN Flood">SYN Flood</option>
+                        <option value="Malware">Malware</option>
+                        <option value="Intrusion">Intrusion</option>
+                        <option value="Suspicious">Suspicious</option>
+                    </select>
+                </div>
+
+                <div class="action-group">
+                    <button id="export-btn" class="action-btn" type="button">⬇️ Export CSV</button>
+                    <button id="refresh-btn" class="action-btn" type="button">🔄 Refresh</button>
+                </div>
+            </div>
+
+            <div class="count-bar">Showing <span id="alert-count">0</span> alert(s)</div>
+
+            <div class="table-wrapper">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Timestamp</th>
+                            <th>Source IP</th>
+                            <th>Attack Type</th>
+                            <th>Severity</th>
+                            <th>Detection Method</th>
+                            <th>Description</th>
+                        </tr>
+                    </thead>
+                    <tbody id="alert-body">
+                        <tr><td colspan="6" class="empty-msg">Loading alerts…</td></tr>
+                    </tbody>
+                </table>
             </div>
         </div>
+    </main>
 
-        <!-- Attack type dropdown filter group -->
-        <div class="filter-group">
-            <span class="filter-label">Attack Type</span>
-            <select id="type-filter">
-                <!-- Each option value matches the attack_type field from the API -->
-                <option value="all">All Types</option>
-                <option value="DoS">DoS</option>
-                <option value="Port Scan">Port Scan</option>
-                <option value="SYN Flood">SYN Flood</option>
-                <option value="ICMP Flood">ICMP Flood</option>
-                <option value="Brute Force">Brute Force</option>
-            </select>
-        </div>
+    <div id="refresh-indicator">Auto-refresh in <span id="countdown">30</span>s</div>
 
-        <!-- Method filter button group -->
-        <div class="filter-group">
-            <span class="filter-label">Method</span>
-            <div class="btn-group">
-                <!-- Each button has data-method to indicate which method it filters -->
-                <button class="filter-btn active" data-method="all">All</button>
-                <button class="filter-btn" data-method="Rule-Based">Rule-Based</button>
-                <button class="filter-btn" data-method="ML">ML</button>
-            </div>
-        </div>
-
-        <!-- Right-side action buttons — export and refresh -->
-        <div class="action-group">
-            <!-- Export button triggers the CSV download from the backend -->
-            <button class="action-btn" id="export-btn">⬇ Export CSV</button>
-            <!-- Refresh button re-fetches alerts from the API immediately -->
-            <button class="action-btn" id="refresh-btn">↻ Refresh</button>
-        </div>
-    </div>
-
-    <!-- ── COUNT BAR: shows how many rows are visible ─────── -->
-    <div class="count-bar">
-        Showing <span id="alert-count">0</span> alerts
-    </div>
-
-    <!-- ── ALERTS TABLE ────────────────────────────────────── -->
-    <div class="table-wrapper">
-        <table>
-            <thead>
-                <tr>
-                    <!-- Column headers matching the alert data fields -->
-                    <th>Timestamp</th>
-                    <th>Source IP</th>
-                    <th>Attack Type</th>
-                    <th>Severity</th>
-                    <th>Method</th>
-                    <th>Detail</th>
-                </tr>
-            </thead>
-            <!-- tbody is populated dynamically by renderTable() below -->
-            <tbody id="alert-body">
-                <!-- Loading placeholder shown before the first fetch completes -->
-                <tr><td colspan="6" class="empty-msg">Loading alerts…</td></tr>
-            </tbody>
-        </table>
-    </div>
-
-    <!-- ── AUTO-REFRESH COUNTDOWN PILL ────────────────────── -->
-    <div id="refresh-indicator">Auto-refresh in <span id="countdown">10</span>s</div>
-
-    <!-- ── INLINE JAVASCRIPT ───────────────────────────────── -->
     <script>
-        // ── STATE VARIABLES ─────────────────────────────────────────────────
-
-        // allAlerts holds the full unfiltered list fetched from the server
-        // We keep this so filters can re-run without re-fetching every time
         var allAlerts = [];
-
-        // activeSeverity tracks which severity button is currently selected
-        // 'all' means no severity filter is active
         var activeSeverity = 'all';
+        var countdownValue = 30;
 
-        // activeMethod tracks which method button is currently selected
-        // 'all' means no method filter is active
-        var activeMethod = 'all';
-
-        // countdownValue tracks the seconds remaining until the next auto-refresh
-        var countdownValue = 10;
-
-        // ── FETCH ALERTS FROM SERVER ─────────────────────────────────────────
-
-        // fetchAlerts() — Loads up to 200 alerts from the backend API
-        // It always fetches fresh data then reapplies the current active filters
-        function fetchAlerts() {
-            // Call the Flask API endpoint that returns recent alerts as JSON
-            // limit=200 means we want at most 200 alerts returned
-            fetch('/api/alerts?limit=200')
-                // When the response arrives, parse it as JSON
-                .then(function(response) { return response.json(); })
-                // When JSON is ready, process the data
-                .then(function(data) {
-                    // Save all alerts into the global variable
-                    // data.alerts is the array returned by Flask
-                    allAlerts = data.alerts || [];
-
-                    // Apply whatever filters are currently active
-                    // This makes sure the displayed table stays consistent
-                    applyFilters();
-                })
-                // If the fetch fails (server down, network error), log it
-                .catch(function(err) {
-                    // Print the error to the browser console for debugging
-                    console.error('[NIDS] Failed to fetch alerts:', err);
-                    // Show an error row in the table so the user knows something is wrong
-                    document.getElementById('alert-body').innerHTML =
-                        '<tr><td colspan="6" class="empty-msg">⚠️ Could not load alerts. Is the server running?</td></tr>';
-                });
-        }
-
-        // ── RENDER TABLE ─────────────────────────────────────────────────────
-
-        // renderTable(alertsArray) — Clears the table and draws all rows for the given array
-        // alertsArray is the already-filtered list of alert objects to display
-        function renderTable(alertsArray) {
-            // Get the table body element where rows will be injected
-            var tbody = document.getElementById('alert-body');
-
-            // Update the count display to show how many rows are visible
-            document.getElementById('alert-count').textContent = alertsArray.length;
-
-            // If the filtered result is empty, show a friendly "no results" message
-            if (alertsArray.length === 0) {
-                // Replace all table rows with a single "no results" cell
-                tbody.innerHTML = '<tr><td colspan="6" class="empty-msg">No alerts match your filter.</td></tr>';
-                // Stop here — no rows to render
-                return;
-            }
-
-            // Build the HTML for all rows at once using map() and join()
-            // This is faster than appending one row at a time in a loop
-            tbody.innerHTML = alertsArray.map(function(alert) {
-                // Build the severity badge for this row
-                var sevBadge = buildSeverityBadge(alert.severity);
-
-                // Build the method badge for this row
-                var methodBadge = buildMethodBadge(alert.method);
-
-                // Return one complete <tr> row as an HTML string
-                // Using template literals (backtick strings) for clean multi-line HTML
-                return '<tr>' +
-                    // Timestamp column — show empty string if missing
-                    '<td>' + (alert.timestamp || '—') + '</td>' +
-                    // Source IP column
-                    '<td>' + (alert.src_ip || '—') + '</td>' +
-                    // Attack type column
-                    '<td>' + (alert.attack_type || '—') + '</td>' +
-                    // Severity column — coloured badge
-                    '<td>' + sevBadge + '</td>' +
-                    // Method column — coloured badge
-                    '<td>' + methodBadge + '</td>' +
-                    // Detail column
-                    '<td>' + (alert.detail || '—') + '</td>' +
-                '</tr>';
-            }).join(''); // join all row strings into one big HTML string
-        }
-
-        // ── BADGE BUILDERS ───────────────────────────────────────────────────
-
-        // buildSeverityBadge(severity) — Returns an HTML badge string for the given severity level
-        // High = red, Medium = orange, Low = blue
         function buildSeverityBadge(severity) {
-            // Normalize the severity to lowercase so comparisons are case-insensitive
             var s = (severity || '').toLowerCase();
-
-            // Choose CSS class based on severity value
-            if (s === 'high')   { return '<span class="badge badge-high">'   + severity + '</span>'; }
-            if (s === 'medium') { return '<span class="badge badge-medium">' + severity + '</span>'; }
-            if (s === 'low')    { return '<span class="badge badge-low">'    + severity + '</span>'; }
-
-            // Fallback for unknown severity values — plain text
+            if (s === 'high') return '<span class="badge badge-high">' + severity + '</span>';
+            if (s === 'medium') return '<span class="badge badge-medium">' + severity + '</span>';
+            if (s === 'low') return '<span class="badge badge-low">' + severity + '</span>';
             return '<span class="badge">' + (severity || '—') + '</span>';
         }
 
-        // buildMethodBadge(method) — Returns an HTML badge string for the detection method
-        // Rule-Based = grey, ML = blue, Both = purple
-        function buildMethodBadge(method) {
-            // Normalize to lowercase for safe comparisons
-            var m = (method || '').toLowerCase();
+        function renderTable(alertsArray) {
+            var tbody = document.getElementById('alert-body');
+            document.getElementById('alert-count').textContent = alertsArray.length;
 
-            // Choose CSS class based on method value
-            if (m === 'rule-based') { return '<span class="badge badge-rule">' + method + '</span>'; }
-            if (m === 'ml')         { return '<span class="badge badge-ml">'   + method + '</span>'; }
-            if (m === 'both')       { return '<span class="badge badge-both">' + method + '</span>'; }
+            if (alertsArray.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="6" class="empty-msg">No alerts match your filter</td></tr>';
+                return;
+            }
 
-            // Fallback for unknown methods
-            return '<span class="badge">' + (method || '—') + '</span>';
+            tbody.innerHTML = alertsArray.map(function (alert) {
+                return '<tr>' +
+                    '<td>' + (alert.timestamp || '—') + '</td>' +
+                    '<td>' + (alert.src_ip || '—') + '</td>' +
+                    '<td>' + (alert.attack_type || '—') + '</td>' +
+                    '<td>' + buildSeverityBadge(alert.severity) + '</td>' +
+                    '<td>' + (alert.method || '—') + '</td>' +
+                    '<td>' + (alert.detail || '—') + '</td>' +
+                '</tr>';
+            }).join('');
         }
 
-        // ── COMBINED FILTER LOGIC ─────────────────────────────────────────────
-
-        // applyFilters() — Reads all active filter states and renders the matching subset
-        // This is the CENTRAL function called every time ANY filter changes
         function applyFilters() {
-            // Read the current IP search text, trimmed of whitespace, lowercase for comparison
             var ipText = document.getElementById('ip-search').value.trim().toLowerCase();
-
-            // Read the currently selected attack type from the dropdown
-            // 'all' means no attack type filter is applied
             var selectedType = document.getElementById('type-filter').value;
 
-            // Filter allAlerts using every active condition simultaneously
-            var filtered = allAlerts.filter(function(alert) {
-                // ── IP FILTER: does src_ip contain the typed text? ──
-                // If ipText is empty, this condition is always true (no filter applied)
-                var ipMatch = (ipText === '') ||
-                    (alert.src_ip || '').toLowerCase().indexOf(ipText) !== -1;
-
-                // ── SEVERITY FILTER: does severity match the active button? ──
-                // If activeSeverity is 'all', skip this filter (always true)
-                var sevMatch = (activeSeverity === 'all') ||
-                    (alert.severity || '').toLowerCase() === activeSeverity.toLowerCase();
-
-                // ── ATTACK TYPE FILTER: does attack_type match the dropdown? ──
-                // If selectedType is 'all', skip this filter (always true)
-                var typeMatch = (selectedType === 'all') ||
-                    (alert.attack_type || '') === selectedType;
-
-                // ── METHOD FILTER: does method match the active button? ──
-                // If activeMethod is 'all', skip this filter (always true)
-                var methodMatch = (activeMethod === 'all') ||
-                    (alert.method || '').toLowerCase() === activeMethod.toLowerCase();
-
-                // An alert passes only if ALL four filters match simultaneously
-                return ipMatch && sevMatch && typeMatch && methodMatch;
+            var filtered = allAlerts.filter(function (alert) {
+                var ipMatch = (ipText === '') || ((alert.src_ip || '').toLowerCase().indexOf(ipText) !== -1);
+                var typeMatch = (selectedType === 'all') || (alert.attack_type === selectedType);
+                var sevMatch = (activeSeverity === 'all') || (alert.severity === activeSeverity);
+                return ipMatch && typeMatch && sevMatch;
             });
 
-            // Pass the filtered array to renderTable to update the table display
             renderTable(filtered);
         }
 
-        // ── SEVERITY BUTTON HANDLERS ──────────────────────────────────────────
-
-        // setActiveSeverityButton(value) — Highlights the clicked severity button
-        // and removes the 'active' class from all others
-        function setActiveSeverityButton(value) {
-            // Update the global active severity state
-            activeSeverity = value;
-
-            // Select all severity filter buttons in the DOM
-            var buttons = document.querySelectorAll('[data-severity]');
-
-            // Loop through each button and set or remove the active class
-            buttons.forEach(function(btn) {
-                // Add 'active' class only if this button's value matches the new active value
-                if (btn.getAttribute('data-severity') === value) {
-                    btn.classList.add('active');
-                } else {
-                    // Remove active class from all non-selected buttons
-                    btn.classList.remove('active');
-                }
-            });
+        function fetchAlerts() {
+            fetch('/api/alerts?limit=200')
+                .then(function (response) { return response.json(); })
+                .then(function (data) {
+                    allAlerts = data.alerts || [];
+                    applyFilters();
+                })
+                .catch(function (err) {
+                    console.error('Failed to fetch alerts:', err);
+                    document.getElementById('alert-body').innerHTML =
+                        '<tr><td colspan="6" class="empty-msg">Could not load alerts</td></tr>';
+                });
         }
 
-        // ── METHOD BUTTON HANDLERS ────────────────────────────────────────────
+        document.getElementById('ip-search').addEventListener('input', applyFilters);
+        document.getElementById('type-filter').addEventListener('change', applyFilters);
 
-        // setActiveMethodButton(value) — Highlights the clicked method button
-        // and removes the 'active' class from all others
-        function setActiveMethodButton(value) {
-            // Update the global active method state
-            activeMethod = value;
-
-            // Select all method filter buttons in the DOM
-            var buttons = document.querySelectorAll('[data-method]');
-
-            // Loop and update active class on each button
-            buttons.forEach(function(btn) {
-                // Set active only on the matching button
-                if (btn.getAttribute('data-method') === value) {
-                    btn.classList.add('active');
-                } else {
-                    btn.classList.remove('active');
-                }
-            });
-        }
-
-        // ── BIND ALL UI EVENTS ────────────────────────────────────────────────
-
-        // Wait for the whole page to load before attaching event listeners
-        document.addEventListener('DOMContentLoaded', function() {
-
-            // ── IP SEARCH INPUT ─────────────────────────────────────────────
-            // Listen for every keypress in the IP search box
-            document.getElementById('ip-search').addEventListener('input', function() {
-                // Re-run all filters with the new text value
+        document.querySelectorAll('[data-severity]').forEach(function (btn) {
+            btn.addEventListener('click', function () {
+                document.querySelectorAll('[data-severity]').forEach(function (b) {
+                    b.classList.remove('active');
+                });
+                this.classList.add('active');
+                activeSeverity = this.dataset.severity;
                 applyFilters();
             });
-
-            // ── SEVERITY BUTTONS ────────────────────────────────────────────
-            // Attach a click listener to every button that has a data-severity attribute
-            document.querySelectorAll('[data-severity]').forEach(function(btn) {
-                btn.addEventListener('click', function() {
-                    // Get this button's severity value from its data attribute
-                    var value = btn.getAttribute('data-severity');
-                    // Update the active button highlight
-                    setActiveSeverityButton(value);
-                    // Re-apply all filters to update the table
-                    applyFilters();
-                });
-            });
-
-            // ── ATTACK TYPE DROPDOWN ─────────────────────────────────────────
-            // Listen for changes on the type dropdown select element
-            document.getElementById('type-filter').addEventListener('change', function() {
-                // Re-apply all filters whenever the dropdown selection changes
-                applyFilters();
-            });
-
-            // ── METHOD BUTTONS ───────────────────────────────────────────────
-            // Attach a click listener to every button that has a data-method attribute
-            document.querySelectorAll('[data-method]').forEach(function(btn) {
-                btn.addEventListener('click', function() {
-                    // Get this button's method value from its data attribute
-                    var value = btn.getAttribute('data-method');
-                    // Update the active button highlight
-                    setActiveMethodButton(value);
-                    // Re-apply all filters to update the table
-                    applyFilters();
-                });
-            });
-
-            // ── EXPORT CSV BUTTON ────────────────────────────────────────────
-            // When clicked, redirect the browser to the CSV download endpoint
-            document.getElementById('export-btn').addEventListener('click', function() {
-                // Setting window.location.href tells the browser to navigate to this URL
-                // The Flask /api/alerts/download route sends the file as an attachment
-                // so the browser will show a "Save As" dialog instead of navigating away
-                window.location.href = '/api/alerts/download';
-            });
-
-            // ── REFRESH BUTTON ───────────────────────────────────────────────
-            // When clicked, immediately re-fetch alerts and reapply filters
-            document.getElementById('refresh-btn').addEventListener('click', function() {
-                // Fetch fresh data from the server right now
-                fetchAlerts();
-                // Reset the countdown timer back to 10 seconds
-                countdownValue = 10;
-                // Update the countdown display immediately
-                document.getElementById('countdown').textContent = countdownValue;
-            });
-
-            // ── FIRST LOAD ───────────────────────────────────────────────────
-            // Fetch alerts immediately when the page first loads
-            fetchAlerts();
         });
 
-        // ── AUTO REFRESH ──────────────────────────────────────────────────────
+        document.getElementById('export-btn').addEventListener('click', function () {
+            window.location.href = '/api/alerts/download';
+        });
 
-        // Run this timer every 1 second to count down the auto-refresh clock
-        setInterval(function() {
-            // Decrease the countdown by 1 second each tick
-            countdownValue -= 1;
+        document.getElementById('refresh-btn').addEventListener('click', function () {
+            fetchAlerts();
+            countdownValue = 30;
+        });
 
-            // Update the countdown number displayed in the bottom-right pill
+        setInterval(function () {
+            countdownValue--;
             document.getElementById('countdown').textContent = countdownValue;
 
-            // When countdown reaches zero, trigger a refresh
             if (countdownValue <= 0) {
-                // Re-fetch all alerts from the server
                 fetchAlerts();
-                // Reset countdown back to 10 for the next cycle
-                countdownValue = 10;
+                countdownValue = 30;
             }
-        }, 1000); // 1000 milliseconds = 1 second interval
+        }, 1000);
+
+        fetchAlerts();
     </script>
 </body>
 </html>
+

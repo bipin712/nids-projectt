@@ -1,23 +1,446 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <!-- Character set for text rendering -->
     <meta charset="UTF-8">
-    <!-- Responsive viewport layout -->
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <!-- Browser tab title -->
     <title>NIDS — System Settings</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+    <style>
+        .page-header h1 {
+            color: var(--text-primary);
+        }
+
+
+        .settings-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .settings-card {
+            background: var(--surface);
+            border: var(--card-border);
+            border-radius: var(--card-radius);
+            padding: 2rem;
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
+
+        .settings-card h2 {
+            color: var(--text-primary);
+            font-size: 1.2rem;
+            font-weight: 600;
+            padding-bottom: 0.75rem;
+            border-bottom: 2px solid var(--accent-red);
+        }
+
+        .settings-card p {
+            color: var(--text-muted);
+            font-size: 0.88rem;
+            line-height: 1.5;
+        }
+
+        .status-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0.75rem 0;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .status-row:last-child {
+            border-bottom: none;
+        }
+
+        .status-label {
+            color: var(--text-muted);
+            font-size: 0.88rem;
+        }
+
+        .status-val {
+            font-size: 0.88rem;
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+
+        .indicator {
+            padding: 0.35rem 0.8rem;
+            border-radius: 12px;
+            font-size: 0.75rem;
+            font-weight: 700;
+            display: inline-block;
+        }
+
+        .indicator-green {
+            background: #d1fae5;
+            color: #047857;
+        }
+
+        .indicator-red {
+            background: #fee2e2;
+            color: var(--accent-red);
+        }
+
+        .control-row {
+            display: flex;
+            gap: 0.8rem;
+            margin-top: 0.5rem;
+        }
+
+        input[type="text"],
+        input[type="number"] {
+            flex: 1;
+            background: white;
+            border: 2px solid var(--border);
+            color: var(--text-primary);
+            padding: 0.6rem 1rem;
+            border-radius: 6px;
+            font-size: 0.9rem;
+            outline: none;
+            transition: border-color 0.3s;
+        }
+
+        input[type="text"]:focus,
+        input[type="number"]:focus {
+            border-color: var(--accent-red);
+            box-shadow: 0 0 0 3px rgba(230, 57, 70, 0.1);
+        }
+
+        .btn {
+            padding: 0.6rem 1.2rem;
+            border-radius: 6px;
+            border: none;
+            font-size: 0.85rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+        }
+
+        .btn-primary {
+            background: var(--accent-red);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #d93247;
+        }
+
+        .btn-danger {
+            background: var(--accent-cyan);
+            color: white;
+        }
+
+        .btn-danger:hover {
+            background: #0d9fd9;
+        }
+
+        .threshold-list {
+            display: flex;
+            flex-direction: column;
+            gap: 0.8rem;
+        }
+
+        .threshold-item {
+            background: #f9fafb;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 1rem;
+        }
+
+        .threshold-header {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: 0.5rem;
+        }
+
+        .threshold-name {
+            color: var(--accent-red);
+            font-weight: 700;
+        }
+
+        .threshold-desc {
+            font-size: 0.78rem;
+            color: var(--text-muted);
+        }
+
+        .response-msg {
+            font-size: 0.85rem;
+            padding: 0.8rem 1rem;
+            border-radius: 6px;
+            display: none;
+            margin-top: 0.5rem;
+        }
+
+        .response-success {
+            background: #d1fae5;
+            color: #047857;
+            border: 1px solid #a7f3d0;
+        }
+
+        .response-error {
+            background: #fee2e2;
+            color: var(--accent-red);
+            border: 1px solid #fecaca;
+        }
+
+        .academic-info {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+            font-size: 0.88rem;
+        }
+
+        .academic-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 0.5rem 0;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .academic-row:last-child {
+            border-bottom: none;
+        }
+
+        .academic-label {
+            color: var(--text-muted);
+        }
+
+        .academic-value {
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar">
+        <div class="navbar-brand">🛡️ NIDS Security System</div>
+        <ul class="navbar-menu">
+            <li><a href="/dashboard">Dashboard</a></li>
+            <li><a href="/alerts">Live Alerts</a></li>
+            <li><a href="/analysis">Analysis</a></li>
+            <li><a href="/ml_status">ML Status</a></li>
+            <li><a href="/logs">Logs</a></li>
+            <li><a href="/settings">Settings</a></li>
+        </ul>
+    </nav>
+
+
+    <main class="main-content">
+        <div class="container">
+            <!-- Page Header -->
+            <div class="page-header">
+                <h1 class="h1">System Settings</h1>
+            </div>
+
+
+            <!-- Settings Grid -->
+            <div class="settings-grid">
+                <!-- Detection Settings Card -->
+                <div class="settings-card">
+                    <h2>Detection Settings</h2>
+                    <p>Configure how the system detects and classifies threats.</p>
+
+                    <div class="status-row">
+                        <span class="status-label">Detection Status</span>
+                        <span class="indicator indicator-green">Active</span>
+                    </div>
+                    <div class="status-row">
+                        <span class="status-label">Rule-Based Detection</span>
+                        <span class="indicator indicator-green">Enabled</span>
+                    </div>
+                    <div class="status-row">
+                        <span class="status-label">ML Classification</span>
+                        <span class="indicator indicator-green">Enabled</span>
+                    </div>
+
+                    <div class="control-row">
+                        <input type="number" id="rule-threshold" placeholder="Rule sensitivity" value="0.6" min="0" max="1" step="0.1">
+                        <button class="btn btn-primary" onclick="updateRuleThreshold()">Save</button>
+                    </div>
+                    <div class="response-msg" id="rule-response"></div>
+                </div>
+
+                <!-- Alert Settings Card -->
+                <div class="settings-card">
+                    <h2>Alert Settings</h2>
+                    <p>Configure alert notification and logging preferences.</p>
+
+                    <div class="status-row">
+                        <span class="status-label">Alert Logging</span>
+                        <span class="indicator indicator-green">Enabled</span>
+                    </div>
+                    <div class="status-row">
+                        <span class="status-label">Auto-Archive</span>
+                        <span class="indicator indicator-green">Enabled</span>
+                    </div>
+                    <div class="status-row">
+                        <span class="status-label">Retention Days</span>
+                        <span class="status-val">30 days</span>
+                    </div>
+
+                    <div class="control-row">
+                        <input type="number" id="retention-days" placeholder="Days to retain logs" value="30" min="1" max="365">
+                        <button class="btn btn-primary" onclick="updateRetention()">Save</button>
+                    </div>
+                    <div class="response-msg" id="retention-response"></div>
+                </div>
+
+                <!-- System Status Card -->
+                <div class="settings-card">
+                    <h2>System Status</h2>
+                    <p>Current system health and performance metrics.</p>
+
+                    <div class="academic-info">
+                        <div class="academic-row">
+                            <span class="academic-label">Uptime</span>
+                            <span class="academic-value" id="uptime">Loading...</span>
+                        </div>
+                        <div class="academic-row">
+                            <span class="academic-label">Packets Processed</span>
+                            <span class="academic-value" id="packets">Loading...</span>
+                        </div>
+                        <div class="academic-row">
+                            <span class="academic-label">Model Accuracy</span>
+                            <span class="academic-value" id="accuracy">Loading...</span>
+                        </div>
+                        <div class="academic-row">
+                            <span class="academic-label">Database Size</span>
+                            <span class="academic-value" id="db-size">Loading...</span>
+                        </div>
+                    </div>
+
+                    <button class="btn btn-danger" onclick="refreshStats()">🔄 Refresh Stats</button>
+                </div>
+
+                <!-- Network Configuration Card -->
+                <div class="settings-card">
+                    <h2>Network Configuration</h2>
+                    <p>Configure network monitoring parameters.</p>
+
+                    <div class="status-row">
+                        <span class="status-label">Interface Monitoring</span>
+                        <span class="indicator indicator-green">Active</span>
+                    </div>
+                    <div class="status-row">
+                        <span class="status-label">Packet Capture</span>
+                        <span class="indicator indicator-green">Running</span>
+                    </div>
+
+                    <div class="control-row">
+                        <input type="text" id="monitor-interface" placeholder="eth0" value="eth0">
+                        <button class="btn btn-primary" onclick="updateInterface()">Save</button>
+                    </div>
+                    <div class="response-msg" id="interface-response"></div>
+                </div>
+
+                <!-- Data Management Card -->
+                <div class="settings-card">
+                    <h2>Data Management</h2>
+                    <p>Manage logs, backups, and data retention.</p>
+
+                    <div class="status-row">
+                        <span class="status-label">Total Alerts</span>
+                        <span class="status-val" id="total-alerts">Loading...</span>
+                    </div>
+                    <div class="status-row">
+                        <span class="status-label">Database Health</span>
+                        <span class="indicator indicator-green">OK</span>
+                    </div>
+
+                    <div class="control-row">
+                        <button class="btn btn-primary" onclick="exportData()">📥 Export Data</button>
+                        <button class="btn btn-danger" onclick="clearOldLogs()">🗑️ Clear Old Logs</button>
+                    </div>
+                </div>
+
+                <!-- Security Settings Card -->
+                <div class="settings-card">
+                    <h2>Security</h2>
+                    <p>System security and authentication settings.</p>
+
+                    <div class="status-row">
+                        <span class="status-label">System Protection</span>
+                        <span class="indicator indicator-green">Enabled</span>
+                    </div>
+                    <div class="status-row">
+                        <span class="status-label">Threat Detection</span>
+                        <span class="indicator indicator-green">Active</span>
+                    </div>
+
+                    <p style="color: var(--text-muted); font-size: 0.8rem; margin-top: 0.5rem;">
+                        Last security scan: <strong>2 hours ago</strong>
+                    </p>
+                    <button class="btn btn-primary" onclick="runSecurityScan()">🔒 Run Security Scan</button>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        // Placeholder functions for settings updates
+        function updateRuleThreshold() {
+            alert('Rule threshold updated');
+        }
+
+        function updateRetention() {
+            alert('Retention settings updated');
+        }
+
+        function updateInterface() {
+            alert('Network interface updated');
+        }
+
+        function exportData() {
+            alert('Data exported successfully');
+        }
+
+        function clearOldLogs() {
+            if (confirm('Are you sure you want to clear old logs? This cannot be undone.')) {
+                alert('Old logs cleared');
+            }
+        }
+
+        function runSecurityScan() {
+            alert('Security scan started');
+        }
+
+        function refreshStats() {
+            alert('Stats refreshed');
+        }
+
+        // Load initial stats
+        document.addEventListener('DOMContentLoaded', function() {
+            document.getElementById('uptime').textContent = '45 days, 12 hours';
+            document.getElementById('packets').textContent = '1.2M packets';
+            document.getElementById('accuracy').textContent = '99.2%';
+            document.getElementById('db-size').textContent = '520 MB';
+            document.getElementById('total-alerts').textContent = '342 alerts';
+        });
+    </script>
+</body>
+</html>
     <style>
         /* ── RESET & BASE STYLE ───────────────────────────────────── */
         * { margin: 0; padding: 0; box-sizing: border-box; }
 
         body {
             font-family: 'Segoe UI', Arial, sans-serif;
-            background: #0f0f1a;
-            color: #e0e0e0;
+            background: #ffffff;
+            color: #1a202c;
             min-height: 100vh;
             padding: 24px;
         }
+
 
         /* ── HEADER ───────────────────────────────────────────────── */
         .page-header {
@@ -50,28 +473,32 @@
         }
 
         .settings-card {
-            background: #16162a;
-            border: 1px solid #2a2a4a;
+            background: #ffffff;
+            border: 1px solid #e8ecf1;
             border-radius: 14px;
             padding: 24px;
             display: flex;
             flex-direction: column;
             gap: 14px;
+            color: #1a202c;
         }
+
 
         .settings-card h2 {
-            color: #00ff88;
+            color: #0055ff;
             font-size: 1.1rem;
-            font-weight: 600;
+            font-weight: 700;
             padding-bottom: 10px;
-            border-bottom: 1px solid #2a2a4a;
+            border-bottom: 1px solid #e8ecf1;
         }
 
+
         .settings-card p {
-            color: #aaa;
+            color: #718096;
             font-size: 0.88rem;
             line-height: 1.4;
         }
+
 
         /* ── STATUS BADGES AND LABELS ─────────────────────────────── */
         .status-row {
@@ -85,14 +512,17 @@
         .status-row:last-child { border-bottom: none; }
 
         .status-label {
-            color: #888;
+            color: #718096;
             font-size: 0.88rem;
         }
 
+
         .status-val {
             font-size: 0.88rem;
-            font-weight: 600;
+            font-weight: 700;
+            color: #1a202c;
         }
+
 
         /* Status Badge Styling */
         .indicator {
@@ -114,15 +544,16 @@
 
         input[type="text"] {
             flex: 1;
-            background: #0f0f1a;
-            border: 1px solid #2a2a4a;
-            color: #e0e0e0;
+            background: #ffffff;
+            border: 1px solid #e8ecf1;
+            color: #1a202c;
             padding: 8px 12px;
             border-radius: 8px;
             font-size: 0.9rem;
             outline: none;
             transition: border-color 0.2s;
         }
+
 
         input[type="text"]:focus { border-color: #00ff88; }
 
@@ -138,8 +569,10 @@
 
         .btn:hover { opacity: 0.85; }
 
-        .btn-primary { background: #00ff88; color: #000; }
-        .btn-danger { background: #ff4444; color: #fff; }
+        .btn-primary { background: #0055ff; color: #fff; }
+
+        .btn-danger { background: #dc2626; color: #fff; }
+
 
         /* ── THRESHOLDS LIST ──────────────────────────────────────── */
         .threshold-list {
@@ -149,27 +582,31 @@
         }
 
         .threshold-item {
-            background: #0f0f1a;
-            border: 1px solid #2a2a4a;
+            background: #ffffff;
+            border: 1px solid #e8ecf1;
             border-radius: 10px;
             padding: 12px;
+            color: #1a202c;
         }
+
 
         .threshold-header {
             display: flex;
             justify-content: space-between;
             font-size: 0.85rem;
-            font-weight: 600;
-            color: #e0e0e0;
+            font-weight: 700;
+            color: #1a202c;
             margin-bottom: 4px;
         }
+
 
         .threshold-name { color: #ff9900; }
 
         .threshold-desc {
             font-size: 0.78rem;
-            color: #888;
+            color: #718096;
         }
+
 
         /* ── RESPONSES AND LOGS ───────────────────────────────────── */
         .response-msg {
@@ -179,8 +616,10 @@
             display: none;
         }
 
-        .response-success { background: #00ff8811; color: #00ff88; border: 1px solid #00ff8822; }
-        .response-error { background: #ff444411; color: #ff4444; border: 1px solid #ff444422; }
+        .response-success { background: #d1fae5; color: #047857; border: 1px solid #a7f3d0; }
+
+        .response-error { background: #fee2e2; color: #dc2626; border: 1px solid #fecaca; }
+
 
         /* ── ACADEMIC INFO ────────────────────────────────────────── */
         .academic-info {

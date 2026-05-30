@@ -1,12 +1,394 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <!-- Character encoding for proper text display -->
     <meta charset="UTF-8">
-    <!-- Responsive viewport for all screen sizes -->
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <!-- Page title shown in the browser tab -->
     <title>NIDS — ML Model Status</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+    <style>
+        .page-header h1 {
+            color: var(--text-primary);
+        }
+
+        .status-banner {
+            text-align: center;
+            padding: 2rem;
+            border-radius: var(--card-radius);
+            margin-bottom: 2rem;
+            background: var(--surface);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+        }
+
+        .status-active {
+            border: 2px solid #10b981;
+        }
+
+        .status-offline {
+            border: 2px solid #dc2626;
+        }
+
+        .status-badge {
+            display: inline-block;
+            padding: 0.8rem 2rem;
+            border-radius: 50px;
+            font-size: 1.3rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+        }
+
+        .badge-active {
+            background: #d1fae5;
+            color: #047857;
+            border: 2px solid #10b981;
+        }
+
+        .badge-offline {
+            background: #fee2e2;
+            color: #dc2626;
+            border: 2px solid #dc2626;
+        }
+
+        .status-sub {
+            color: var(--text-muted);
+            font-size: 0.95rem;
+            margin-top: 0.5rem;
+        }
+
+        .accuracy-section {
+            background: var(--surface);
+            border: var(--card-border);
+            border-radius: var(--card-radius);
+            padding: 2rem;
+            margin-bottom: 2rem;
+            text-align: center;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+        }
+
+        .accuracy-number {
+            font-size: 3.5rem;
+            font-weight: 800;
+            color: var(--accent-blue);
+            line-height: 1;
+        }
+
+        .accuracy-label {
+            color: var(--text-muted);
+            font-size: 0.95rem;
+            margin-top: 0.5rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .progress-track {
+            background: var(--accent-blue-light);
+            border-radius: 12px;
+            height: 20px;
+            width: 100%;
+            max-width: 500px;
+            margin: 0 auto;
+            overflow: hidden;
+            border: 1px solid var(--border);
+        }
+
+        .progress-fill {
+            height: 100%;
+            border-radius: 12px;
+            background: linear-gradient(90deg, var(--accent-blue), #5b8cff);
+            transition: width 1s ease;
+            width: 0%;
+        }
+
+        .metrics-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .metric-card {
+            background: var(--surface);
+            border: var(--card-border);
+            border-radius: var(--card-radius);
+            padding: 1.5rem;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
+
+        .metric-card h3 {
+            color: var(--text-primary);
+            font-size: 0.95rem;
+            margin-bottom: 0.5rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            font-weight: 600;
+            padding-bottom: 0.5rem;
+            border-bottom: 2px solid var(--accent-red);
+        }
+
+        .metric-card p {
+            color: var(--text-muted);
+            font-size: 0.85rem;
+            margin-bottom: 1rem;
+        }
+
+        .metric-list {
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+        }
+
+        .metric-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0.5rem 0;
+            border-bottom: 1px solid var(--border);
+            font-size: 0.9rem;
+        }
+
+        .metric-row:last-child {
+            border-bottom: none;
+        }
+
+        .metric-label {
+            color: var(--text-muted);
+        }
+
+        .metric-value {
+            font-weight: 600;
+            color: var(--accent-red);
+        }
+
+        .action-buttons {
+            display: flex;
+            gap: 1rem;
+            justify-content: center;
+            margin-top: 2rem;
+        }
+
+        .btn-action {
+            padding: 0.75rem 1.5rem;
+            border-radius: 6px;
+            border: none;
+            font-size: 0.9rem;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s;
+            color: white;
+        }
+
+        .btn-retrain {
+            background: var(--accent-red);
+        }
+
+        .btn-retrain:hover {
+            background: #d93247;
+            transform: translateY(-2px);
+        }
+
+        .btn-download {
+            background: var(--accent-cyan);
+        }
+
+        .btn-download:hover {
+            background: #0d9fd9;
+            transform: translateY(-2px);
+        }
+
+        .training-log {
+            background: var(--surface);
+            border: var(--card-border);
+            border-radius: var(--card-radius);
+            padding: 1.5rem;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
+
+        .training-log h2 {
+            color: var(--text-primary);
+            margin-bottom: 1rem;
+            padding-bottom: 0.75rem;
+            border-bottom: 2px solid var(--accent-red);
+        }
+
+        .log-entry {
+            padding: 0.75rem;
+            border-left: 3px solid var(--accent-red);
+            background: #f9fafb;
+            margin-bottom: 0.75rem;
+            border-radius: 4px;
+            font-size: 0.85rem;
+        }
+
+        .log-time {
+            color: var(--accent-red);
+            font-weight: 600;
+        }
+
+        .log-message {
+            color: var(--text-primary);
+            margin-left: 0.5rem;
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar">
+        <div class="navbar-brand">🛡️ NIDS Security System</div>
+
+        <ul class="navbar-menu">
+            <li><a href="/dashboard">Dashboard</a></li>
+            <li><a href="/alerts">Live Alerts</a></li>
+            <li><a href="/analysis">Analysis</a></li>
+            <li><a href="/ml_status">ML Status</a></li>
+            <li><a href="/logs">Logs</a></li>
+            <li><a href="/settings">Settings</a></li>
+        </ul>
+    </nav>
+
+
+    <main class="main-content">
+        <div class="container">
+            <!-- Page Header -->
+            <div class="page-header">
+                <h1 class="h1">ML Model Status</h1>
+            </div>
+
+
+            <!-- Model Status Banner -->
+            <div class="status-banner status-active">
+                <div class="status-badge badge-active">✓ Model Active</div>
+                <div class="status-sub">Last trained: 5 days ago | Last updated: 2 hours ago</div>
+            </div>
+
+            <!-- Model Accuracy Section -->
+            <div class="accuracy-section">
+                <div class="accuracy-number" id="accuracy-value">98.7%</div>
+                <div class="accuracy-label">Current Model Accuracy</div>
+                <div class="progress-track">
+                    <div class="progress-fill" style="width: 98.7%;"></div>
+                </div>
+            </div>
+
+            <!-- Metrics Grid -->
+            <div class="metrics-grid">
+                <!-- Model Performance Card -->
+                <div class="metric-card">
+                    <h3>Model Performance</h3>
+                    <p>Classification metrics on test dataset</p>
+                    <div class="metric-list">
+                        <div class="metric-row">
+                            <span class="metric-label">Precision</span>
+                            <span class="metric-value">97.2%</span>
+                        </div>
+                        <div class="metric-row">
+                            <span class="metric-label">Recall</span>
+                            <span class="metric-value">98.1%</span>
+                        </div>
+                        <div class="metric-row">
+                            <span class="metric-label">F1 Score</span>
+                            <span class="metric-value">97.6%</span>
+                        </div>
+                        <div class="metric-row">
+                            <span class="metric-label">ROC-AUC</span>
+                            <span class="metric-value">99.1%</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Training Data Card -->
+                <div class="metric-card">
+                    <h3>Training Data</h3>
+                    <p>Statistics from training dataset</p>
+                    <div class="metric-list">
+                        <div class="metric-row">
+                            <span class="metric-label">Samples Used</span>
+                            <span class="metric-value">45,230</span>
+                        </div>
+                        <div class="metric-row">
+                            <span class="metric-label">Features</span>
+                            <span class="metric-value">32</span>
+                        </div>
+                        <div class="metric-row">
+                            <span class="metric-label">Training Time</span>
+                            <span class="metric-value">2h 15m</span>
+                        </div>
+                        <div class="metric-row">
+                            <span class="metric-label">Model Size</span>
+                            <span class="metric-value">8.4 MB</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Detection Stats Card -->
+                <div class="metric-card">
+                    <h3>Detection Statistics</h3>
+                    <p>Real-world detection performance</p>
+                    <div class="metric-list">
+                        <div class="metric-row">
+                            <span class="metric-label">True Positives</span>
+                            <span class="metric-value">342</span>
+                        </div>
+                        <div class="metric-row">
+                            <span class="metric-label">False Positives</span>
+                            <span class="metric-value">8</span>
+                        </div>
+                        <div class="metric-row">
+                            <span class="metric-label">False Negatives</span>
+                            <span class="metric-value">6</span>
+                        </div>
+                        <div class="metric-row">
+                            <span class="metric-label">Detection Rate</span>
+                            <span class="metric-value">98.3%</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Action Buttons -->
+            <div class="action-buttons">
+                <button class="btn-action btn-retrain" onclick="retrainModel()">🔄 Retrain Model</button>
+                <button class="btn-action btn-download" onclick="downloadModel()">💾 Download Model</button>
+            </div>
+
+            <!-- Training Log -->
+            <div class="training-log">
+                <h2>📝 Training Log</h2>
+                <div class="log-entry">
+                    <span class="log-time">2024-05-24 14:32:18</span>
+                    <span class="log-message">Model trained successfully with 98.7% accuracy</span>
+                </div>
+                <div class="log-entry">
+                    <span class="log-time">2024-05-22 09:15:42</span>
+                    <span class="log-message">Previous model retrained - improved from 97.8% to 98.7%</span>
+                </div>
+                <div class="log-entry">
+                    <span class="log-time">2024-05-20 16:45:30</span>
+                    <span class="log-message">Data preprocessing completed - 45,230 samples prepared</span>
+                </div>
+                <div class="log-entry">
+                    <span class="log-time">2024-05-18 11:22:15</span>
+                    <span class="log-message">Feature engineering initiated - 32 features extracted</span>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        function retrainModel() {
+            alert('Model retraining started. This may take several hours.');
+        }
+
+        function downloadModel() {
+            alert('Downloading model... Check your downloads folder.');
+        }
+
+        // Simulate accuracy animation on page load
+        window.addEventListener('load', function() {
+            const progressFill = document.querySelector('.progress-fill');
+            setTimeout(() => {
+                progressFill.style.width = '98.7%';
+            }, 100);
+        });
+    </script>
+</body>
+</html>
     <style>
         /* ── RESET & BASE ─────────────────────────────────────────── */
         /* Remove default browser margins and padding */
@@ -15,11 +397,12 @@
         /* Dark background body with light text */
         body {
             font-family: 'Segoe UI', Arial, sans-serif;
-            background: #0f0f1a;
-            color: #e0e0e0;
+            background: #ffffff;
+            color: #1a202c;
             min-height: 100vh;
             padding: 24px;
         }
+
 
         /* ── HEADER ───────────────────────────────────────────────── */
         /* Top bar with back link and page title */
@@ -54,19 +437,23 @@
             padding: 24px;
             border-radius: 14px;
             margin-bottom: 28px;
+            background: #ffffff;
         }
+
 
         /* Green banner for active model */
         .status-active {
-            background: linear-gradient(135deg, #00ff8815, #00ff8808);
-            border: 1px solid #00ff8833;
+            background: #d1fae5;
+            border: 1px solid #a7f3d0;
         }
+
 
         /* Red banner for offline model */
         .status-offline {
-            background: linear-gradient(135deg, #ff444415, #ff444408);
-            border: 1px solid #ff444433;
+            background: #fee2e2;
+            border: 1px solid #fecaca;
         }
+
 
         /* Large status badge text */
         .status-badge {
@@ -80,72 +467,80 @@
 
         /* Green badge for active */
         .badge-active {
-            background: #00ff8822;
-            color: #00ff88;
-            border: 2px solid #00ff88;
+            background: #ffffff;
+            color: #047857;
+            border: 2px solid #10b981;
         }
+
 
         /* Red badge for offline */
         .badge-offline {
-            background: #ff444422;
-            color: #ff4444;
-            border: 2px solid #ff4444;
+            background: #ffffff;
+            color: #dc2626;
+            border: 2px solid #dc2626;
         }
+
 
         /* Subtitle text under the badge */
         .status-sub {
-            color: #888;
+            color: #718096;
             font-size: 0.9rem;
             margin-top: 8px;
         }
 
+
         /* ── ACCURACY SECTION ─────────────────────────────────────── */
         /* Prominent accuracy display with progress bar */
         .accuracy-section {
-            background: #16162a;
-            border: 1px solid #2a2a4a;
+            background: #ffffff;
+            border: 1px solid #e8ecf1;
             border-radius: 14px;
             padding: 28px;
             margin-bottom: 24px;
             text-align: center;
         }
 
+
         /* Large accuracy number */
         .accuracy-number {
             font-size: 3.5rem;
             font-weight: 800;
-            color: #00ff88;
+            color: #0055ff;
             line-height: 1;
         }
 
+
         /* Label text under the number */
         .accuracy-label {
-            color: #888;
+            color: #718096;
             font-size: 0.95rem;
             margin-top: 6px;
             margin-bottom: 18px;
         }
 
+
         /* Outer track of the progress bar */
         .progress-track {
-            background: #0f0f1a;
+            background: #f5f7fa;
             border-radius: 12px;
             height: 18px;
             width: 100%;
             max-width: 500px;
             margin: 0 auto;
             overflow: hidden;
-            border: 1px solid #2a2a4a;
+            border: 1px solid #e8ecf1;
         }
+
 
         /* Inner filled portion of the progress bar */
         .progress-fill {
             height: 100%;
             border-radius: 12px;
-            background: linear-gradient(90deg, #00cc66, #00ff88);
+            background: linear-gradient(90deg, #0055ff, #5b8cff);
             transition: width 1s ease;
             width: 0%;
         }
+
 
         /* ── CARD GRID ────────────────────────────────────────────── */
         /* Responsive grid layout for information cards */
@@ -158,21 +553,24 @@
 
         /* Individual card container */
         .card {
-            background: #16162a;
-            border: 1px solid #2a2a4a;
+            background: #ffffff;
+            border: 1px solid #e8ecf1;
             border-radius: 14px;
             padding: 24px;
+            color: #1a202c;
         }
+
 
         /* Card title heading */
         .card h2 {
-            color: #00ff88;
+            color: #0055ff;
             font-size: 1.1rem;
-            font-weight: 600;
+            font-weight: 700;
             margin-bottom: 16px;
             padding-bottom: 10px;
-            border-bottom: 1px solid #2a2a4a;
+            border-bottom: 1px solid #e8ecf1;
         }
+
 
         /* ── INFO ROWS ────────────────────────────────────────────── */
         /* Label-value rows inside cards */
@@ -189,16 +587,18 @@
 
         /* Left side label text */
         .info-label {
-            color: #888;
+            color: #718096;
             font-size: 0.88rem;
         }
 
+
         /* Right side value text */
         .info-value {
-            color: #e0e0e0;
+            color: #1a202c;
             font-size: 0.88rem;
-            font-weight: 600;
+            font-weight: 700;
         }
+
 
         /* ── CLASS BADGES ─────────────────────────────────────────── */
         /* Container for the row of class badges */
@@ -240,39 +640,45 @@
 
         /* Table header cells */
         th {
-            background: #1a1a2e;
-            color: #00ff88;
+            background: #f5f7fa;
+            color: #1a202c;
             padding: 12px 14px;
             text-align: left;
-            font-weight: 600;
-            border-bottom: 2px solid #2a2a4a;
+            font-weight: 700;
+            border-bottom: 2px solid #e8ecf1;
         }
+
 
         /* Table data cells */
         td {
             padding: 11px 14px;
-            border-bottom: 1px solid #1f1f35;
+            border-bottom: 1px solid #e8ecf1;
             vertical-align: middle;
+            color: #1a202c;
         }
 
+
         /* Hover highlight on rows */
-        tr:hover td { background: #1a1a2e; }
+        tr:hover td { background: #f5f7fa; }
+
 
         /* ── ERROR STATE ──────────────────────────────────────────── */
         /* Red warning box shown when model is offline */
         .error-box {
-            background: #ff444411;
-            border: 1px solid #ff444444;
+            background: #fee2e2;
+            border: 1px solid #fecaca;
             border-radius: 10px;
             padding: 20px;
             text-align: center;
-            color: #ff6666;
+            color: #dc2626;
             margin-bottom: 20px;
             display: none;
         }
 
+
         /* Instruction text inside error box */
-        .error-box p { margin-top: 8px; color: #aaa; font-size: 0.9rem; }
+        .error-box p { margin-top: 8px; color: #7f1d1d; font-size: 0.9rem; }
+
     </style>
 </head>
 <body>

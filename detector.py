@@ -1,234 +1,167 @@
-# Import defaultdict from collections to easily create dictionaries with default values (like lists)
-from collections import defaultdict
-# Import time module to get current timestamps for tracking packet rates over time
-import time
+# detector.py
+"""Rule‑based detection module for NIDS.
+Implements five simple threshold‑based attacks using per‑IP counters.
+Does NOT import Flask, database, ML, or sniffer modules.
+"""
 
-# Create a dictionary to track timestamps of packets for DoS detection, grouped by source IP
-_dos_tracker = defaultdict(list)
-# Create a dictionary to track unique destination ports accessed by a source IP over time
-_port_scan_tracker = defaultdict(lambda: defaultdict(list))
-# Create a dictionary to track timestamps of SYN packets for SYN Flood detection, grouped by source IP
-_syn_tracker = defaultdict(list)
-# Create a dictionary to track timestamps of ICMP packets for ICMP Flood detection, grouped by source IP
-_icmp_tracker = defaultdict(list)
-# Create a dictionary to track timestamps of RST packets for Brute Force detection, grouped by source IP
-_brute_force_tracker = defaultdict(list)
+# Standard library imports – required for counters and timestamps
+import collections  # defaultdict for per‑IP data structures
+import time        # time.time() for current epoch seconds
 
-# Define a helper function to clean up old timestamps that are outside our time window
+# ---------------------------------------------------------------------------
+# Global dictionaries to store recent event timestamps for each source IP.
+# Each dict maps src_ip -> list of timestamps (or (ts, port) tuples).
+# ---------------------------------------------------------------------------
+
+# DoS detection – track every packet timestamp per IP
+_packet_times = collections.defaultdict(list)
+
+# Port‑scan detection – track (timestamp, dst_port) per IP
+_port_records = collections.defaultdict(list)
+
+# SYN‑flood detection – track SYN packet timestamps per IP
+_syn_times = collections.defaultdict(list)
+
+# ICMP‑flood detection – track ICMP packet timestamps per IP
+_icmp_times = collections.defaultdict(list)
+
+# Brute‑force detection – track RST packet timestamps per IP
+_rst_times = collections.defaultdict(list)
+
+# ---------------------------------------------------------------------------
+# Helper: remove timestamps older than the given time window (seconds).
+# Works on a list of timestamps (or (ts, ...) tuples) in‑place.
+# ---------------------------------------------------------------------------
 def _clean(timestamps, window):
-    # Get the current time in seconds since the epoch
-    current_time = time.time()
-    # Calculate the cutoff time; anything before this time is too old and should be removed
-    cutoff = current_time - window
-    # Keep only the timestamps that are greater than the cutoff time, using list comprehension
-    return [ts for ts in timestamps if ts > cutoff]
+    """Prune entries older than *window* seconds.
+    *timestamps* is a list where the first element is the timestamp.
+    Returns the cleaned list (the same object)."""
+    now = time.time()
+    # Keep only entries where now - ts <= window
+    # For plain timestamps use the value directly; for tuples use first element.
+    while timestamps and (now - (timestamps[0][0] if isinstance(timestamps[0], (list, tuple)) else timestamps[0])) > window:
+        timestamps.pop(0)
+    return timestamps
 
-# Define a function to check for DoS attacks (more than 100 packets/sec from same IP)
+# ---------------------------------------------------------------------------
+# Individual rule checks – each returns an alert dict or None.
+# ---------------------------------------------------------------------------
+
 def check_dos(src_ip):
-    # Set the time window to 1 second for DoS detection
-    window = 1
-    # Set the threshold to 100 packets
-    threshold = 100
-    # Clean old timestamps from the tracker for this specific source IP
-    _dos_tracker[src_ip] = _clean(_dos_tracker[src_ip], window)
-    # Add the current timestamp to the tracker since we just received a packet from this IP
-    _dos_tracker[src_ip].append(time.time())
-    
-    # Check if the number of packets in the last second exceeds our threshold
-    if len(_dos_tracker[src_ip]) > threshold:
-        # If threshold exceeded, clear the tracker for this IP so we don't keep alerting for every single packet
-        _dos_tracker[src_ip] = []
-        # Return an alert dictionary with the attack details
+    """Detect DoS if >100 packets/sec from *src_ip*.
+    Severity: High, method: Rule‑Based."""
+    now = time.time()
+    # Record current packet time
+    _packet_times[src_ip].append(now)
+    # Remove old timestamps outside 1‑second window
+    _clean(_packet_times[src_ip], 1)
+    if len(_packet_times[src_ip]) > 100:
         return {
-            'src_ip': src_ip,
-            'attack_type': 'DoS',
-            'severity': 'High',
-            'method': 'Rule-Based',
-            'detail': f'More than {threshold} packets/sec'
+            "src_ip": src_ip,
+            "attack_type": "DoS",
+            "severity": "High",
+            "method": "Rule-Based",
+            "detail": f"{len(_packet_times[src_ip])} packets in 1 s"
         }
-    # If threshold is not exceeded, return None meaning no attack detected
     return None
 
-# Define a function to check for Port Scans (more than 20 unique ports in 10 seconds)
 def check_port_scan(src_ip, dst_port):
-    # If there is no destination port (e.g., for some ICMP packets), we can't check for a port scan
+    """Detect port‑scan if >20 unique ports in 10 seconds.
+    Severity: Medium."""
     if dst_port is None:
-        # Return None meaning no attack detected
         return None
-        
-    # Set the time window to 10 seconds for Port Scan detection
-    window = 10
-    # Set the threshold to 20 unique ports
-    threshold = 20
-    # Get the current timestamp
-    current_time = time.time()
-    
-    # Add the current timestamp to the list of accesses for this specific destination port by this source IP
-    _port_scan_tracker[src_ip][dst_port].append(current_time)
-    
-    # Create a list to keep track of ports that have recent activity
-    active_ports = []
-    # Loop through all ports this source IP has accessed
-    for port in list(_port_scan_tracker[src_ip].keys()):
-        # Clean old timestamps for this port
-        _port_scan_tracker[src_ip][port] = _clean(_port_scan_tracker[src_ip][port], window)
-        # If the port still has recent timestamps after cleaning
-        if len(_port_scan_tracker[src_ip][port]) > 0:
-            # Add this port to our list of active ports
-            active_ports.append(port)
-        # If the port has no recent timestamps
-        else:
-            # Remove the port entirely from the tracker to save memory
-            del _port_scan_tracker[src_ip][port]
-            
-    # Check if the number of unique active ports exceeds our threshold
-    if len(active_ports) > threshold:
-        # If threshold exceeded, clear the tracker for this IP so we don't keep alerting
-        _port_scan_tracker[src_ip].clear()
-        # Return an alert dictionary with the attack details
+    now = time.time()
+    # Store (timestamp, port) tuple
+    _port_records[src_ip].append((now, dst_port))
+    # Clean old entries outside 10‑second window
+    _clean(_port_records[src_ip], 10)
+    # Determine unique ports within the window
+    recent_ports = {port for (_, port) in _port_records[src_ip]}
+    if len(recent_ports) > 20:
         return {
-            'src_ip': src_ip,
-            'attack_type': 'Port Scan',
-            'severity': 'Medium',
-            'method': 'Rule-Based',
-            'detail': f'More than {threshold} unique ports in {window}s'
+            "src_ip": src_ip,
+            "attack_type": "Port Scan",
+            "severity": "Medium",
+            "method": "Rule-Based",
+            "detail": f"{len(recent_ports)} ports in 10 s"
         }
-    # If threshold is not exceeded, return None meaning no attack detected
     return None
 
-# Define a function to check for SYN Floods (more than 200 SYN packets in 10 seconds)
-def check_syn_flood(src_ip, flags, protocol):
-    # SYN floods only apply to TCP traffic, and we need the flags to check for SYN
-    if protocol != 'TCP' or flags is None:
-        # Return None if it's not a TCP packet or flags are missing
+def check_syn_flood(src_ip, flags):
+    """Detect SYN‑flood if >200 SYN packets in 10 seconds.
+    *flags* should contain the string 'SYN'.
+    Severity: High."""
+    if not flags or "SYN" not in flags.upper():
         return None
-        
-    # Check if the 'S' (SYN) flag is present in the TCP flags (e.g., 'S', 'SA')
-    if 'S' in str(flags):
-        # Set the time window to 10 seconds
-        window = 10
-        # Set the threshold to 200 SYN packets
-        threshold = 200
-        # Clean old timestamps from the tracker for this source IP
-        _syn_tracker[src_ip] = _clean(_syn_tracker[src_ip], window)
-        # Add the current timestamp to the tracker
-        _syn_tracker[src_ip].append(time.time())
-        
-        # Check if the number of SYN packets in the window exceeds our threshold
-        if len(_syn_tracker[src_ip]) > threshold:
-            # Clear the tracker to prevent duplicate alerts
-            _syn_tracker[src_ip] = []
-            # Return an alert dictionary with the attack details
-            return {
-                'src_ip': src_ip,
-                'attack_type': 'SYN Flood',
-                'severity': 'High',
-                'method': 'Rule-Based',
-                'detail': f'More than {threshold} SYN packets in {window}s'
-            }
-    # Return None meaning no attack detected
+    now = time.time()
+    _syn_times[src_ip].append(now)
+    _clean(_syn_times[src_ip], 10)
+    if len(_syn_times[src_ip]) > 200:
+        return {
+            "src_ip": src_ip,
+            "attack_type": "SYN Flood",
+            "severity": "High",
+            "method": "Rule-Based",
+            "detail": f"{len(_syn_times[src_ip])} SYNs in 10 s"
+        }
     return None
 
-# Define a function to check for ICMP Floods (more than 50 ICMP packets in 5 seconds)
 def check_icmp_flood(src_ip, protocol):
-    # We only care about ICMP protocol packets for this check
-    if protocol == 'ICMP':
-        # Set the time window to 5 seconds
-        window = 5
-        # Set the threshold to 50 ICMP packets
-        threshold = 50
-        # Clean old timestamps from the tracker for this source IP
-        _icmp_tracker[src_ip] = _clean(_icmp_tracker[src_ip], window)
-        # Add the current timestamp to the tracker
-        _icmp_tracker[src_ip].append(time.time())
-        
-        # Check if the number of ICMP packets in the window exceeds our threshold
-        if len(_icmp_tracker[src_ip]) > threshold:
-            # Clear the tracker to prevent duplicate alerts
-            _icmp_tracker[src_ip] = []
-            # Return an alert dictionary with the attack details
-            return {
-                'src_ip': src_ip,
-                'attack_type': 'ICMP Flood',
-                'severity': 'Medium',
-                'method': 'Rule-Based',
-                'detail': f'More than {threshold} ICMP packets in {window}s'
-            }
-    # Return None meaning no attack detected
-    return None
-
-# Define a function to check for Brute Force attacks (more than 5 RST packets in 30 seconds)
-def check_brute_force(src_ip, flags, protocol):
-    # Brute force (in this context) looks at TCP connection resets, so we check for TCP
-    if protocol != 'TCP' or flags is None:
-        # Return None if it's not a TCP packet or flags are missing
+    """Detect ICMP‑flood if >50 ICMP packets in 5 seconds.
+    Severity: Medium."""
+    if protocol.upper() != "ICMP":
         return None
-        
-    # Check if the 'R' (RST) flag is present in the TCP flags, indicating a connection reset
-    if 'R' in str(flags):
-        # Set the time window to 30 seconds
-        window = 30
-        # Set the threshold to 5 RST packets
-        threshold = 5
-        # Clean old timestamps from the tracker for this source IP
-        _brute_force_tracker[src_ip] = _clean(_brute_force_tracker[src_ip], window)
-        # Add the current timestamp to the tracker
-        _brute_force_tracker[src_ip].append(time.time())
-        
-        # Check if the number of RST packets in the window exceeds our threshold
-        if len(_brute_force_tracker[src_ip]) > threshold:
-            # Clear the tracker to prevent duplicate alerts
-            _brute_force_tracker[src_ip] = []
-            # Return an alert dictionary with the attack details
-            return {
-                'src_ip': src_ip,
-                'attack_type': 'Brute Force',
-                'severity': 'High',
-                'method': 'Rule-Based',
-                'detail': f'More than {threshold} RST packets in {window}s'
-            }
-    # Return None meaning no attack detected
+    now = time.time()
+    _icmp_times[src_ip].append(now)
+    _clean(_icmp_times[src_ip], 5)
+    if len(_icmp_times[src_ip]) > 50:
+        return {
+            "src_ip": src_ip,
+            "attack_type": "ICMP Flood",
+            "severity": "Medium",
+            "method": "Rule-Based",
+            "detail": f"{len(_icmp_times[src_ip])} ICMPs in 5 s"
+        }
     return None
 
-# Define the master function that runs all 5 rules on every incoming packet
+def check_brute_force(src_ip, flags):
+    """Detect brute‑force if >5 RST packets in 30 seconds.
+    *flags* should contain 'RST'.
+    Severity: High."""
+    if not flags or "RST" not in flags.upper():
+        return None
+    now = time.time()
+    _rst_times[src_ip].append(now)
+    _clean(_rst_times[src_ip], 30)
+    if len(_rst_times[src_ip]) > 5:
+        return {
+            "src_ip": src_ip,
+            "attack_type": "Brute Force",
+            "severity": "High",
+            "method": "Rule‑Based",
+            "detail": f"{len(_rst_times[src_ip])} RSTs in 30 s"
+        }
+    return None
+
+# ---------------------------------------------------------------------------
+# Master function – runs all rules and returns a list of alerts (may be empty).
+# ---------------------------------------------------------------------------
+
 def run_all_rules(src_ip, dst_port, flags, protocol):
-    # Create an empty list to store any alerts generated by the individual rules
+    """Execute every rule for the supplied packet data.
+    Returns a list of alert dictionaries (empty list if none)."""
     alerts = []
-    
-    # Run the DoS check and store the result
-    dos_alert = check_dos(src_ip)
-    # If the DoS check returned an alert (not None)
-    if dos_alert:
-        # Add the alert to our list of alerts
-        alerts.append(dos_alert)
-        
-    # Run the Port Scan check and store the result
-    port_scan_alert = check_port_scan(src_ip, dst_port)
-    # If the Port Scan check returned an alert
-    if port_scan_alert:
-        # Add the alert to our list of alerts
-        alerts.append(port_scan_alert)
-        
-    # Run the SYN Flood check and store the result
-    syn_flood_alert = check_syn_flood(src_ip, flags, protocol)
-    # If the SYN Flood check returned an alert
-    if syn_flood_alert:
-        # Add the alert to our list of alerts
-        alerts.append(syn_flood_alert)
-        
-    # Run the ICMP Flood check and store the result
-    icmp_flood_alert = check_icmp_flood(src_ip, protocol)
-    # If the ICMP Flood check returned an alert
-    if icmp_flood_alert:
-        # Add the alert to our list of alerts
-        alerts.append(icmp_flood_alert)
-        
-    # Run the Brute Force check and store the result
-    brute_force_alert = check_brute_force(src_ip, flags, protocol)
-    # If the Brute Force check returned an alert
-    if brute_force_alert:
-        # Add the alert to our list of alerts
-        alerts.append(brute_force_alert)
-        
-    # Finally, return the list of all collected alerts (it could be empty if no attacks were found)
-    return alerts
+    # Each check returns either an alert dict or None.
+    for checker in [
+        lambda: check_dos(src_ip),
+        lambda: check_port_scan(src_ip, dst_port),
+        lambda: check_syn_flood(src_ip, flags),
+        lambda: check_icmp_flood(src_ip, protocol),
+        lambda: check_brute_force(src_ip, flags),
+    ]:
+        result = checker()
+        if result:
+            alerts.append(result)
+    return alerts if alerts else []
+
+# End of detector.py

@@ -2,112 +2,121 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>NIDS Dashboard</title>
-    <style>
-        body { font-family: Arial, sans-serif; background: #0f0f1a; color: #e0e0e0; padding: 20px; }
-        h1 { color: #00ff88; }
-        .clock { position: absolute; top: 20px; right: 20px; font-size: 1.5rem; color: #00ff88; font-weight: bold; }
-        .card-container { display: flex; gap: 20px; margin-bottom: 30px; }
-        .card { background: #1a1a2e; border: 1px solid #333; border-radius: 10px; padding: 20px; flex: 1; text-align: center; }
-        .stat-value { font-size: 2.5rem; color: #00ff88; font-weight: bold; margin: 10px 0; }
-        .label { color: #aaa; font-size: 0.9rem; }
-        
-        table { width: 100%; border-collapse: collapse; margin-top: 20px; background: #1a1a2e; }
-        th { background: #2a2a3e; color: #00ff88; padding: 12px; text-align: left; }
-        td { padding: 12px; border-bottom: 1px solid #333; }
-        
-        .badge-high { background: #ff444433; color: #ff4444; padding: 4px 8px; border-radius: 4px; border: 1px solid #ff4444; display: inline-block; }
-        .badge-medium { background: #ffd70033; color: #ffd700; padding: 4px 8px; border-radius: 4px; border: 1px solid #ffd700; display: inline-block; }
-        .badge-low { background: #00ff8833; color: #00ff88; padding: 4px 8px; border-radius: 4px; border: 1px solid #00ff88; display: inline-block; }
-        
-        .badge-rule { background: #88888833; color: #aaaaaa; padding: 4px 8px; border-radius: 4px; border: 1px solid #888888; display: inline-block; }
-        .badge-ml { background: #4488ff33; color: #66bbff; padding: 4px 8px; border-radius: 4px; border: 1px solid #4488ff; display: inline-block; }
-        
-        .new-row { animation: highlight 3s ease-out forwards; }
-        @keyframes highlight {
-            0% { background-color: #00ff8855; }
-            100% { background-color: transparent; }
-        }
-        
-        .nav-links a { color: #00ff88; text-decoration: none; margin-right: 15px; font-weight: bold; }
-        .nav-links a:hover { text-decoration: underline; }
-    </style>
-    <!-- Add Socket.IO CDN BEFORE the dashboard.js script tag -->
-    <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
-    <!-- Import the custom dashboard logic -->
-    <script src="/static/js/dashboard.js"></script>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SparkleClean — Professional Cleaning</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+    <script src="/static/js/dashboard.js" defer></script>
 </head>
-<body>
-    <!-- Clock in top-right corner showing current time -->
-    <div class="clock" id="clock">00:00:00</div>
-    
-    <h1>🛡️ NIDS Dashboard</h1>
-    
-    <div class="nav-links" style="margin-bottom: 20px;">
-        <a href="/alerts">🚨 Live Alerts</a>
-        <a href="/analysis">📊 Analysis</a>
-        <a href="/ml_status">🤖 ML Status</a>
-        <a href="/logs">📋 Logs</a>
-        <a href="/settings">⚙️ Settings</a>
-    </div>
-    
-    <div class="card-container">
-        <div class="card">
-            <div class="label">Packets Captured</div>
-            <div class="stat-value" id="total-packets">Loading...</div>
-        </div>
-        <div class="card">
-            <div class="label">Total Alerts</div>
-            <div class="stat-value" id="total-alerts">Loading...</div>
-        </div>
-        <div class="card">
-            <div class="label">High Alerts</div>
-            <div class="stat-value" id="high-alerts" style="color: #ff4444;">Loading...</div>
-        </div>
-        <div class="card">
-            <div class="label">Medium Alerts</div>
-            <div class="stat-value" id="medium-alerts" style="color: #ffd700;">Loading...</div>
-        </div>
-    </div>
-    
-    <div class="card-container">
-        <div class="card">
-            <div class="label">ML Model Status</div>
-            <div class="stat-value" id="ml-status" style="font-size: 1.5rem; margin-top: 15px;">Loading...</div>
-        </div>
-        <div class="card">
-            <div class="label">Sniffer Status</div>
-            <div class="stat-value" id="sniffer-status" style="font-size: 1.5rem; margin-top: 15px;">Loading...</div>
-        </div>
-    </div>
+<body class="landing-page">
+    <nav class="navbar">
+        <div class="navbar-brand">🛡️NIDS Security System</div>
+        <ul class="navbar-menu">
+            <li><a href="/dashboard">Dashboard</a></li>
+            <li><a href="/alerts">Live Alerts</a></li>
+            <li><a href="/analysis">Analysis</a></li>
+            <li><a href="/ml_status">ML Status</a></li>
+            <li><a href="/logs">Logs</a></li>
+            <li><a href="/settings">Settings</a></li>
+        </ul>
+    </nav>
 
-    <h2>Recent Alerts</h2>
-    <table id="alerts-table">
-        <thead>
-            <tr>
-                <th>Time</th>
-                <th>Source IP</th>
-                <th>Attack Type</th>
-                <th>Severity</th>
-                <th>Method</th>
-                <th>Detail</th>
-            </tr>
-        </thead>
-        <tbody id="alerts-tbody">
-            <tr><td colspan="6" style="text-align: center;">Loading alerts...</td></tr>
-        </tbody>
-    </table>
+
+    <main class="main-content">
+        <div class="container">
+            <div class="page-header">
+                <h1 class="h1">Dashboard</h1>
+            </div>
+
+            <div class="card-container">
+                <div class="card">
+                    <div class="label">Total Alerts</div>
+                    <div class="stat-value" id="dash-total">--</div>
+                </div>
+                <div class="card">
+                    <div class="label">High Severity</div>
+                    <div class="stat-value" id="dash-high">--</div>
+                </div>
+                <div class="card">
+                    <div class="label">Medium Severity</div>
+                    <div class="stat-value" id="dash-medium">--</div>
+                </div>
+                <div class="card">
+                    <div class="label">Low Severity</div>
+                    <div class="stat-value" id="dash-low">--</div>
+                </div>
+            </div>
+
+            <div class="table-wrapper">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Quick Actions</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>
+                                <a class="back-link" href="/alerts">View Live Alerts</a>
+                            </td>
+                            <td id="dash-ml-status">Loading…</td>
+                        </tr>
+                        <tr>
+                            <td>
+                                <a class="back-link" href="/analysis">Open Security Analysis</a>
+                            </td>
+                            <td id="dash-sniffer-status">Loading…</td>
+                        </tr>
+                        <tr>
+                            <td>
+                                <a class="back-link" href="/logs">Open Alert Logs</a>
+                            </td>
+                            <td id="dash-db-status">Loading…</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </main>
 
     <script>
-        // Clock functionality - Updates every second
-        setInterval(() => {
-            const now = new Date();
-            const hours = String(now.getHours()).padStart(2, '0');
-            const minutes = String(now.getMinutes()).padStart(2, '0');
-            const seconds = String(now.getSeconds()).padStart(2, '0');
-            document.getElementById('clock').textContent = `${hours}:${minutes}:${seconds}`;
-        }, 1000);
+        function loadDashboard() {
+            // Alerts stats
+            fetch('/api/stats')
+                .then(r => r.json())
+                .then(data => {
+                    var s = data.alert_stats || {};
+                    document.getElementById('dash-total').textContent = s.total ?? '--';
+                    document.getElementById('dash-high').textContent = s.high ?? '--';
+                    document.getElementById('dash-medium').textContent = s.medium ?? '--';
+                    document.getElementById('dash-low').textContent = s.low ?? '--';
+
+                    var sniffer = data.sniffer_stats || {};
+                    document.getElementById('dash-sniffer-status').textContent = sniffer.is_running ? 'Running' : 'Stopped';
+
+                    // Best-effort DB size/status from stats payload (if backend provides it)
+                    document.getElementById('dash-db-status').textContent = data.db_stats ? ('Size: ' + (data.db_stats.size ?? '--')) : 'Ready';
+                })
+                .catch(() => {
+                    document.getElementById('dash-total').textContent = '--';
+                    document.getElementById('dash-high').textContent = '--';
+                    document.getElementById('dash-medium').textContent = '--';
+                    document.getElementById('dash-low').textContent = '--';
+                });
+
+            // ML status
+            fetch('/api/ml-status')
+                .then(r => r.json())
+                .then(data => {
+                    document.getElementById('dash-ml-status').textContent = data.ml_ready ? 'ML Active' : 'ML Offline';
+                })
+                .catch(() => {
+                    document.getElementById('dash-ml-status').textContent = 'Unknown';
+                });
+        }
+
+        document.addEventListener('DOMContentLoaded', loadDashboard);
     </script>
-    
 </body>
 </html>
+

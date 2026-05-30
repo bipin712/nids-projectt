@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>NIDS — Network Intrusion Detection System</title>
+    <link rel="stylesheet" href="/static/css/style.css" />
+    <meta name="description" content="NIDS dashboard for live intrusion detection, analysis, and ML status." />
+</head>
+<body>
+    <nav class="navbar">
+        <div class="navbar-brand">🛡️ NIDS Security System</div>
+        <ul class="navbar-menu">
+            <li><a href="/dashboard">Dashboard</a></li>
+            <li><a href="/alerts">Live Alerts</a></li>
+            <li><a href="/analysis">Analysis</a></li>
+            <li><a href="/ml_status">ML Status</a></li>
+            <li><a href="/logs">Logs</a></li>
+            <li><a href="/settings">Settings</a></li>
+        </ul>
+    </nav>
+
+    <main class="main-content">
+        <div class="container">
+            <div class="page-header">
+                <h1>Network Intrusion Detection System</h1>
+            </div>
+
+            <div class="card-container">
+                <div class="card">
+                    <div class="label">Live Monitoring</div>
+                    <div class="stat-value">Real-time Alerts</div>
+                    <p style="margin:0.75rem 0 0; color: var(--text-muted); font-size:0.95rem;">
+                        Detect DoS, port scans, SYN floods and suspicious activity from monitored traffic.
+                    </p>
+                </div>
+
+                <div class="card">
+                    <div class="label">Security Analysis</div>
+                    <div class="stat-value">Insights & Trends</div>
+                    <p style="margin:0.75rem 0 0; color: var(--text-muted); font-size:0.95rem;">
+                        Explore attack distribution and severity breakdown using charts.
+                    </p>
+                </div>
+
+                <div class="card">
+                    <div class="label">ML Classification</div>
+                    <div class="stat-value">Model Status</div>
+                    <p style="margin:0.75rem 0 0; color: var(--text-muted); font-size:0.95rem;">
+                        Check if the ML model is active and view detection capability classes.
+                    </p>
+                </div>
+            </div>
+
+            <div class="table-wrapper">
+                <table>
+                    <thead>
+                        <tr>
+                            <th style="width: 320px;">Quick Start</th>
+                            <th>Next Steps</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>
+                                <button class="btn-primary" style="width: 100%; max-width: 260px;" onclick="location.href='/dashboard'">Open Dashboard</button>
+                            </td>
+                            <td style="color: var(--text-muted);">
+                                Start the sniffer and review current alert statistics.
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>
+                                <button class="btn-primary" style="width: 100%; max-width: 260px;" onclick="location.href='/alerts'">View Live Alerts</button>
+                            </td>
+                            <td style="color: var(--text-muted);">
+                                Filter by severity and attack type for faster triage.
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>
+                                <button class="btn-primary" style="width: 100%; max-width: 260px;" onclick="location.href='/settings'">Configure System</button>
+                            </td>
+                            <td style="color: var(--text-muted);">
+                                Set interface and thresholds; review system health.
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </main>
+</body>
+</html>
+

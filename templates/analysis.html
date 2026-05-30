@@ -2,54 +2,101 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>NIDS — Analysis</title>
-    <style>
-        body { font-family: Arial, sans-serif; background: #0f0f1a; color: #e0e0e0; padding: 30px; text-align: center; }
-        h1 { color: #00ff88; }
-        .card { background: #1a1a2e; border: 1px solid #333; border-radius: 10px; padding: 20px; margin: 20px auto; max-width: 500px; }
-        .stat { font-size: 3rem; color: #00ff88; font-weight: bold; }
-        .label { color: #aaa; font-size: 0.9rem; }
-        a { color: #00ff88; }
-    </style>
+    <link rel="stylesheet" href="/static/css/style.css">
     <!-- Include Chart.js library from CDN to render graphs -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <!-- Include our custom charts logic script -->
     <script src="/static/js/charts.js"></script>
+    <style>
+        .chart-container {
+            background: var(--surface);
+            border: var(--card-border);
+            border-radius: var(--card-radius);
+            padding: 1.5rem;
+            margin: 1.5rem 0;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+        }
+
+        .chart-title {
+            color: var(--text-primary);
+            font-size: 1.1rem;
+            font-weight: 600;
+            margin-bottom: 1rem;
+            padding-bottom: 0.5rem;
+            border-bottom: 2px solid var(--accent-blue);
+        }
+
+        canvas {
+            max-height: 400px;
+        }
+    </style>
 </head>
 <body>
-    <a href="/">← Back to Dashboard</a>
-    <h1>📊 Analysis</h1>
-    <div class="card">
-        <div class="stat" id="total">--</div>
-        <div class="label">Total Alerts</div>
-    </div>
-    <div class="card">
-        <div class="stat" id="high" style="color:#ff4444">--</div>
-        <div class="label">High Severity</div>
-    </div>
-    <div class="card">
-        <div class="stat" id="medium" style="color:#ffd700">--</div>
-        <div class="label">Medium Severity</div>
-    </div>
+    <!-- Top Navigation Bar -->
+    <nav class="navbar">
+        <div class="navbar-brand">🛡️ NIDS Security System</div>
+        <ul class="navbar-menu">
+            <li><a href="/dashboard">Dashboard</a></li>
+            <li><a href="/alerts">Live Alerts</a></li>
+            <li><a href="/analysis">Analysis</a></li>
+            <li><a href="/ml_status">ML Status</a></li>
+            <li><a href="/logs">Logs</a></li>
+            <li><a href="/settings">Settings</a></li>
+        </ul>
+    </nav>
 
-    <!-- Container to show warning if no alerts exist in the database -->
-    <div id="no-data-message" class="card" style="display: none; color: #ff4444; font-size: 1.2rem;">
-        ⚠️ No attacks detected yet
-    </div>
-    
-    <!-- Card container for the Attack Type distribution pie chart -->
-    <div class="card" style="max-width: 600px; margin: 20px auto;">
-        <div style="position: relative; height: 350px; width: 100%;">
-            <canvas id="attack-type-chart"></canvas>
+    <main class="main-content">
+        <div class="container">
+            <div class="page-header">
+                <h1 class="h1">📊 Security Analysis</h1>
+            </div>
+
+            <!-- Statistics Cards -->
+            <div class="card-container">
+                <div class="card">
+                    <div class="label">Total Alerts</div>
+                    <div class="stat-value" id="total">--</div>
+                </div>
+                <div class="card">
+                    <div class="label">High Severity</div>
+                    <div class="stat-value" id="high">--</div>
+                </div>
+                <div class="card">
+                    <div class="label">Medium Severity</div>
+                    <div class="stat-value" id="medium">--</div>
+                </div>
+                <div class="card">
+                    <div class="label">Low Severity</div>
+                    <div class="stat-value" id="low">--</div>
+                </div>
+            </div>
+
+            <!-- No Data Message -->
+            <div id="no-data-message" style="display: none;">
+                <div class="card" style="text-align: center; color: var(--accent-blue); font-size: 1.2rem;">
+                    ℹ️ No attacks detected yet
+                </div>
+            </div>
+
+            <!-- Attack Type Distribution Chart -->
+            <div class="chart-container">
+                <div class="chart-title">Attack Type Distribution</div>
+                <div style="position: relative; height: 350px;">
+                    <canvas id="attack-type-chart"></canvas>
+                </div>
+            </div>
+
+            <!-- Alerts by Severity Chart -->
+            <div class="chart-container">
+                <div class="chart-title">Alerts by Severity Level</div>
+                <div style="position: relative; height: 350px;">
+                    <canvas id="severity-chart"></canvas>
+                </div>
+            </div>
         </div>
-    </div>
-    
-    <!-- Card container for the Alerts by Severity bar chart -->
-    <div class="card" style="max-width: 600px; margin: 20px auto;">
-        <div style="position: relative; height: 350px; width: 100%;">
-            <canvas id="severity-chart"></canvas>
-        </div>
-    </div>
+    </main>
 
     <script>
         fetch('/api/stats').then(r => r.json()).then(data => {
@@ -57,6 +104,7 @@
             document.getElementById('total').textContent = s.total;
             document.getElementById('high').textContent = s.high;
             document.getElementById('medium').textContent = s.medium;
+            document.getElementById('low').textContent = s.low || 0;
         });
     </script>
 </body>
